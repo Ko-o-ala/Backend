@@ -5,25 +5,35 @@ import {
   Patch,
   Post,
   UseFilters,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { UserService } from './user.service';
 import { HttpExceptionFilter } from 'src/common/exceptions/http-exception.filter';
 import { SuccessInterceptor } from 'src/common/interceptors/success.interceptor';
-import { UserRequestDto } from './dto/user.request.dto';
+import { UsersService } from '../service/users.service';
+import { AuthService } from 'src/auth/auth.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ReadOnlyUserDto } from './dto/user.dto';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { CurrentUser } from 'src/common/decorators/user.decorator';
+import { User } from '../users.schema';
+import { ReadOnlyUserDto } from '../dto/user.dto';
+import { UserRequestDto } from '../dto/users.request.dto';
+import { LoginRequestDto } from 'src/auth/dto/login.request.dto';
 
-@Controller('user')
+@Controller('users')
 @UseInterceptors(SuccessInterceptor)
 @UseFilters(HttpExceptionFilter)
-export class UserController {
-  constructor(private readonly userService: UserService) {}
+export class UsersController {
+  constructor(
+    private readonly userService: UsersService,
+    private readonly authService: AuthService, // dependency injection을 하려면 해당하는 모듈을 module파일에서 import 해야됨.
+  ) {}
 
   @ApiOperation({ summary: '현재 user 데이터 가져오기' })
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getCurrentUser() {
-    return 'current user';
+  getCurrentUser(@CurrentUser() user: User) {
+    return user.readOnlyData;
   }
 
   @ApiResponse({
@@ -43,14 +53,8 @@ export class UserController {
 
   @ApiOperation({ summary: '로그인' })
   @Post('login')
-  logIn() {
-    return 'login';
-  }
-
-  @ApiOperation({ summary: '로그아웃' })
-  @Post('logout')
-  logOut() {
-    return 'logout';
+  logIn(@Body() data: LoginRequestDto) {
+    return this.authService.jwtLogIn(data);
   }
 
   @ApiOperation({ summary: '초기화면 설문조사' })
@@ -63,5 +67,11 @@ export class UserController {
   @Patch('profile')
   userProfile() {
     return 'userProfile';
+  }
+
+  @ApiOperation({ summary: '모든 유저 정보 가져오기' })
+  @Get('all')
+  getAllUser() {
+    return this.userService.getAllUser();
   }
 }
