@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import mongoose from 'mongoose';
@@ -15,7 +14,6 @@ import mongoose from 'mongoose';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGODB_URI!),
-    UserModule,
     AuthModule,
     UsersModule,
   ],

@@ -21,13 +21,12 @@ export class UsersRepository {
     return user;
   }
 
-  async findUserByEmail(email: string): Promise<User | null> {
-    const user = await this.userModel.findOne({ email });
-    return user;
+  async findByUserID(userID: string) {
+    return this.userModel.findOne({ userID });
   }
 
-  async existByEmail(email: string): Promise<boolean> {
-    const result = await this.userModel.exists({ email });
+  async existByUserID(UserID: string): Promise<boolean> {
+    const result = await this.userModel.exists({ UserID });
     return result ? true : false;
   }
 

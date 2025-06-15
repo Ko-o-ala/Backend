@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt/jwt.strategy';
-import { UserModule } from 'src/user/user.module';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { UserModule } from 'src/user/user.module';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1y' },
     }),
-    forwardRef(() => UserModule),
+    forwardRef(() => UsersModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy], // 여기에 있어야지 의존성 주입이 가능함.
