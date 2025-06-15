@@ -2,10 +2,12 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { UserRequestDto } from '../dto/users.request.dto';
 import { UsersRepository } from '../users.repository';
 import * as bcrypt from 'bcrypt';
+import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly userRepository: UsersRepository) {}
+
   async getAllUser() {
     const allUser = await this.userRepository.findAll();
     const readOnlyUsers = allUser.map((user) => user.readOnlyData);
@@ -29,5 +31,25 @@ export class UsersService {
       gender,
     });
     return user.readOnlyData;
+  }
+
+  async updateUserProfile(userId: string, updateDto: UserUpdateProfileDto) {
+    const user = await this.userRepository.findByUserID(userId);
+
+    if (!user) {
+      throw new HttpException('유저를 찾을 수 없습니다.', 404);
+    }
+
+    // 프로필 업데이트
+    const updatedUser = await this.userRepository.updateById(
+      user._id as string,
+      updateDto,
+    );
+
+    if (!updatedUser) {
+      throw new HttpException('수정 실패', 500);
+    }
+
+    return updatedUser.readOnlyData;
   }
 }

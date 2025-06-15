@@ -4,9 +4,11 @@ import { User } from '../users.schema';
 export class ReadOnlyUserDto extends PickType(User, [
   'userID',
   'name',
+  'gender',
+  'age',
 ] as const) {
   @ApiProperty({
-    example: '12312312',
+    example: '684e5f89b07fd1bd137a81c0',
     description: 'id',
   })
   id: string;

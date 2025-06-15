@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Patch,
   Post,
   UseFilters,
@@ -19,6 +20,8 @@ import { User } from '../users.schema';
 import { ReadOnlyUserDto } from '../dto/user.dto';
 import { UserRequestDto } from '../dto/users.request.dto';
 import { LoginRequestDto } from 'src/auth/dto/login.request.dto';
+import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
+import { ApiSuccessResponse } from 'src/common/decorators/api-success-response.decorator';
 
 @Controller('users')
 @UseInterceptors(SuccessInterceptor)
@@ -31,7 +34,7 @@ export class UsersController {
 
   @ApiOperation({ summary: '현재 user 데이터 가져오기' })
   @UseGuards(JwtAuthGuard)
-  @Get()
+  @Get('profile')
   getCurrentUser(@CurrentUser() user: User) {
     return user.readOnlyData;
   }
@@ -40,13 +43,9 @@ export class UsersController {
     status: 500,
     description: 'Server Error...',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Success',
-    type: ReadOnlyUserDto,
-  })
+  @ApiSuccessResponse(ReadOnlyUserDto, 201)
   @ApiOperation({ summary: '회원가입' })
-  @Post()
+  @Post('signup')
   async signUp(@Body() body: UserRequestDto) {
     return await this.userService.signUp(body);
   }
@@ -57,16 +56,25 @@ export class UsersController {
     return this.authService.jwtLogIn(data);
   }
 
+  @ApiSuccessResponse(UserUpdateProfileDto)
+  @ApiResponse({
+    status: 500,
+    description: 'Server Error...',
+  })
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '사용자 프로필 데이터 수정' })
+  async userProfile(
+    @CurrentUser() user: User,
+    @Body() updateProfileDto: UserUpdateProfileDto,
+  ) {
+    return this.userService.updateUserProfile(user.userID, updateProfileDto);
+  }
+
   @ApiOperation({ summary: '초기화면 설문조사' })
   @Post('survey')
   userSurvey() {
     return 'userSurvey';
-  }
-
-  @ApiOperation({ summary: '회원정보 수정' })
-  @Patch('profile')
-  userProfile() {
-    return 'userProfile';
   }
 
   @ApiOperation({ summary: '모든 유저 정보 가져오기' })

@@ -33,4 +33,10 @@ export class UsersRepository {
   async create(user: UserRequestDto): Promise<User> {
     return await this.userModel.create(user);
   }
+
+  async updateById(UserID: string, updateFields: Partial<User>) {
+    return this.userModel.findByIdAndUpdate(UserID, updateFields, {
+      new: true,
+    });
+  }
 }
