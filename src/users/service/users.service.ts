@@ -40,6 +40,11 @@ export class UsersService {
       throw new HttpException('유저를 찾을 수 없습니다.', 404);
     }
 
+    if (updateDto.password) {
+      const hashed = await bcrypt.hash(updateDto.password, 10);
+      updateDto.password = hashed;
+    }
+
     // 프로필 업데이트
     const updatedUser = await this.userRepository.updateById(
       user._id as string,

@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpCode,
   Patch,
   Post,
   UseFilters,
@@ -22,6 +21,7 @@ import { UserRequestDto } from '../dto/users.request.dto';
 import { LoginRequestDto } from 'src/auth/dto/login.request.dto';
 import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
 import { ApiSuccessResponse } from 'src/common/decorators/api-success-response.decorator';
+import { UpdateProfileSwaggerDataDto } from '../dto/user.update-profile.swagger.dto';
 
 @Controller('users')
 @UseInterceptors(SuccessInterceptor)
@@ -32,7 +32,11 @@ export class UsersController {
     private readonly authService: AuthService, // dependency injection을 하려면 해당하는 모듈을 module파일에서 import 해야됨.
   ) {}
 
-  @ApiOperation({ summary: '현재 user 데이터 가져오기' })
+  @ApiSuccessResponse(UpdateProfileSwaggerDataDto)
+  @ApiOperation({
+    summary:
+      '현재 user 데이터 가져오기 /  Authorization : Bearer + [token] 필요',
+  })
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getCurrentUser(@CurrentUser() user: User) {
@@ -56,14 +60,17 @@ export class UsersController {
     return this.authService.jwtLogIn(data);
   }
 
-  @ApiSuccessResponse(UserUpdateProfileDto)
+  @ApiSuccessResponse(UpdateProfileSwaggerDataDto)
   @ApiResponse({
     status: 500,
     description: 'Server Error...',
   })
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '사용자 프로필 데이터 수정' })
+  @ApiOperation({
+    summary:
+      '사용자 프로필 데이터 수정 / Authorization : Bearer + [token] 필요',
+  })
   async userProfile(
     @CurrentUser() user: User,
     @Body() updateProfileDto: UserUpdateProfileDto,
@@ -77,6 +84,7 @@ export class UsersController {
     return 'userSurvey';
   }
 
+  @ApiSuccessResponse(UpdateProfileSwaggerDataDto)
   @ApiOperation({ summary: '모든 유저 정보 가져오기' })
   @Get('all')
   getAllUser() {
