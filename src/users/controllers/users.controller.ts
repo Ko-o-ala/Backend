@@ -57,13 +57,13 @@ export class UsersController {
     description: 'Server Error...',
   })
   @ApiSuccessResponse(ReadOnlyUserDto, 201)
-  @ApiOperation({ summary: '회원가입' })
+  @ApiOperation({ summary: '[finish] 회원가입' })
   @Post('signup')
   async signUp(@Body() body: UserRequestDto) {
     return await this.userService.signUp(body);
   }
 
-  @ApiOperation({ summary: '로그인' })
+  @ApiOperation({ summary: '[finish] 로그인' })
   @Post('login')
   logIn(@Body() data: LoginRequestDto) {
     return this.authService.jwtLogIn(data);
@@ -133,7 +133,7 @@ export class UsersController {
   }
 
   @ApiSuccessResponse(UpdateProfileSwaggerDataDto)
-  @ApiOperation({ summary: '[개발중] 모든 유저 정보 가져오기' })
+  @ApiOperation({ summary: '테스트 API' })
   @Get('')
   getA() {
     return this.userService.getAllUser();
