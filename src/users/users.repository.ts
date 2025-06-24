@@ -4,12 +4,20 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserRequestDto } from './dto/users.request.dto';
 import { UserCurrentDto } from './dto/users.cuurent.dto';
+import { Survey } from './types/survey.type';
 
 @Injectable()
 export class UsersRepository {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
   ) {}
+
+  async updateSurvey(userID: string, updatedSurvey: Survey) {
+    return await this.userModel.updateOne(
+      { userID },
+      { $set: { survey: updatedSurvey } },
+    );
+  }
 
   async findAll() {
     return await this.userModel.find();

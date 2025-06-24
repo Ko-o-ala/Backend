@@ -20,8 +20,8 @@ async function bootstrap() {
     }),
   );
   const config = new DocumentBuilder()
-    .setTitle('KoOala')
-    .setDescription('user')
+    .setTitle('KoOala user API')
+    .setDescription('개발용 Swagger 문서')
     .setVersion('1.0.0')
     .build();
 
@@ -32,6 +32,6 @@ async function bootstrap() {
     credentials: true,
   });
   const PORT = process.env.PORT;
-  await app.listen(PORT!);
+  await app.listen(PORT!, '0.0.0.0');
 }
 bootstrap();

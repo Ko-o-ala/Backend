@@ -1,11 +1,14 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-// import { User } from '../users.schema';
 import { UserUpdateProfileDto } from './users.update-profile.dto';
+import { UserSurveyDto } from './user.survey.dto';
 
-export class UpdateProfileSwaggerDataDto extends PickType(
-  UserUpdateProfileDto,
-  ['name', 'gender', 'age'] as const,
-) {
+class ExistingUserUpdateProfileDto extends PickType(UserUpdateProfileDto, [
+  'name',
+  'gender',
+  'age',
+] as const) {}
+
+export class UpdateProfileSwaggerDataDto extends ExistingUserUpdateProfileDto {
   @ApiProperty({
     example: '684e5f89b07fd1bd137a81c0',
     description: 'id',
@@ -17,4 +20,10 @@ export class UpdateProfileSwaggerDataDto extends PickType(
     description: 'userID',
   })
   userID: string;
+
+  @ApiProperty({
+    description: 'survey',
+    type: UserSurveyDto,
+  })
+  survey: UserSurveyDto;
 }

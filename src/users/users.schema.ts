@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Document, SchemaOptions } from 'mongoose';
+import { Survey } from './types/survey.type';
 
 const options: SchemaOptions = {
   timestamps: true,
@@ -59,7 +60,7 @@ export class User extends Document {
   gender: string;
 
   @Prop({ type: Object })
-  survey: Record<string, any>;
+  survey: Survey;
 
   @Prop({ type: Object })
   profile: Record<string, any>;
@@ -70,6 +71,7 @@ export class User extends Document {
     name: string;
     age: number;
     gender: string;
+    survey: object;
   };
 }
 
@@ -82,5 +84,6 @@ UserSchema.virtual('readOnlyData').get(function (this: User) {
     name: this.name,
     age: this.age,
     gender: this.gender,
+    survey: this.survey,
   };
 });

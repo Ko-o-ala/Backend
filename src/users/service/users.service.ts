@@ -1,12 +1,39 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { UserRequestDto } from '../dto/users.request.dto';
 import { UsersRepository } from '../users.repository';
 import * as bcrypt from 'bcrypt';
 import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
+import { UserSurveyDto } from '../dto/user.survey.dto';
+import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly userRepository: UsersRepository) {}
+
+  async modifySurvey(userID: string, dto: UserModifySurveyDto) {
+    const user = await this.userRepository.findByUserID(userID);
+    if (!user || !user.survey) {
+      throw new BadRequestException('설문조사가 없습니다.');
+    }
+
+    const updatedSurvey = { ...user.survey, ...dto };
+    await this.userRepository.updateSurvey(userID, updatedSurvey);
+
+    return { message: '설문조사가 성공적으로 수정되었습니다.' };
+  }
+
+  async saveSurvey(userId: string, surveyData: UserSurveyDto) {
+    const user = await this.userRepository.findByUserID(userId);
+
+    if (!user) {
+      throw new HttpException('유저를 찾을 수 없습니다.', 404);
+    }
+
+    user.survey = surveyData;
+    await user.save();
+
+    return { message: '설문조사가 성공적으로 저장되었습니다.' };
+  }
 
   async getAllUser() {
     const allUser = await this.userRepository.findAll();
