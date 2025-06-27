@@ -10,6 +10,16 @@ import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
 export class UsersService {
   constructor(private readonly userRepository: UsersRepository) {}
 
+  async getSurveyByUserID(userID: string) {
+    const user = await this.userRepository.findByUserID(userID);
+
+    if (!user || !user.survey) {
+      throw new HttpException('설문조사 데이터가 없습니다.', 404);
+    }
+
+    return user.survey;
+  }
+
   async modifySurvey(userID: string, dto: UserModifySurveyDto) {
     const user = await this.userRepository.findByUserID(userID);
     if (!user || !user.survey) {

@@ -18,7 +18,7 @@ export class AuthService {
     const user = await this.userRepository.findByUserID(userID);
 
     if (!user) {
-      throw new UnauthorizedException('이메일과 비밀번호를 확인해주세요.');
+      throw new UnauthorizedException('아이디와 비밀번호를 확인해주세요.');
     }
 
     //* password가 일치한지
@@ -28,7 +28,7 @@ export class AuthService {
     );
 
     if (!isPasswordValidated) {
-      throw new UnauthorizedException('이메일과 비밀번호를 확인해주세요.');
+      throw new UnauthorizedException('아이디와 비밀번호를 확인해주세요.');
     }
 
     const payload = { userId: userID, sub: user.id };

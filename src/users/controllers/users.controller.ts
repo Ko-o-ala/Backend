@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Patch,
   Post,
   UseFilters,
@@ -31,6 +32,7 @@ import { UpdateProfileSwaggerDataDto } from '../dto/user.update-profile.swagger.
 import { UserSurveyDto } from '../dto/user.survey.dto';
 import { UserSurveySuccessResponseDto } from '../dto/user.survey.success.response.dto';
 import { UserSurveySuccessModifyResponseDto } from '../dto/user.survey.success.modify.response.dto';
+import { InternalApiKeyGuard } from 'src/common/guards/internal-api-key.guard';
 
 @Controller('users')
 @UseInterceptors(SuccessInterceptor)
@@ -115,7 +117,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '[finish] 사용자 설문조사 수정',
-    description: '이미 저장된 설문조사를 수정. 설문이 없으면 오류 반환.',
+    description:
+      '1. Authorization : Bearer + [token] 필요 / 2. 이미 저장된 설문조사를 수정. 설문이 없으면 오류 반환.',
   })
   @ApiSuccessResponse(UserSurveySuccessModifyResponseDto)
   async modifySurvey(
@@ -132,10 +135,27 @@ export class UsersController {
     return this.userService.getAllUser();
   }
 
-  @ApiSuccessResponse(UpdateProfileSwaggerDataDto)
-  @ApiOperation({ summary: '테스트 API' })
-  @Get('')
-  getA() {
-    return this.userService.getAllUser();
+  @ApiSuccessResponse(UserSurveyDto)
+  @UseGuards(JwtAuthGuard)
+  @Get('survey/result')
+  @ApiOperation({
+    summary: '[finish] 사용자가 자신의 설문조사 데이터 조회.',
+    description:
+      'Headers에 들어가야되는 값 ⇒ Authorization : Bearer + [token] 필요',
+  })
+  getMySurvey(@CurrentUser() user: User) {
+    return this.userService.getSurveyByUserID(user.userID);
+  }
+
+  @ApiSuccessResponse(UserSurveyDto)
+  @UseGuards(InternalApiKeyGuard)
+  @Get('survey/:userID/result')
+  @ApiOperation({
+    summary: '[finish] 추천 알고리즘이 사용자 설문조사 데이터 조회',
+    description:
+      'Headers에 들어가야되는 값 ⇒ x-api-key : 나한테 물어보셈(Internal API Key 인증 필요)',
+  })
+  async getUserSurveyInternal(@Param('userID') userID: string) {
+    return await this.userService.getSurveyByUserID(userID);
   }
 }
