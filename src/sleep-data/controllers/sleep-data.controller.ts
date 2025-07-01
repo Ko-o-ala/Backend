@@ -16,6 +16,8 @@ import { SleepDataService } from '../service/sleep-data.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateSleepDataDto } from '../dto/sleep-data.dto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { SleepDataSuccessReturnDto } from '../dto/sleep-data.success.return.dto';
+import { ApiSuccessResponse } from 'src/common/decorators/api-success-response.decorator';
 
 @Controller('sleep-data')
 @UseInterceptors(SuccessInterceptor)
@@ -24,6 +26,7 @@ export class SleepDataController {
   constructor(private readonly sleepDataService: SleepDataService) {}
 
   @UseGuards(JwtAuthGuard)
+  @ApiSuccessResponse(SleepDataSuccessReturnDto)
   @Post()
   @ApiOperation({
     summary: '생체 수면 데이터 저장',
