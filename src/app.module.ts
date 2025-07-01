@@ -6,7 +6,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { RecommendSoundModule } from './recommend-sound/recommend-sound.module';
+import { SleepDataModule } from './sleep-data/sleep-data.module';
 import mongoose from 'mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import mongoose from 'mongoose';
     MongooseModule.forRoot(process.env.MONGODB_URI!),
     AuthModule,
     UsersModule,
+    ScheduleModule.forRoot(),
+    RecommendSoundModule,
+    SleepDataModule,
   ],
   controllers: [AppController],
   providers: [AppService],
