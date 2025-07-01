@@ -29,7 +29,7 @@ export class SleepDataController {
   @ApiSuccessResponse(SleepDataSuccessReturnDto)
   @Post()
   @ApiOperation({
-    summary: '생체 수면 데이터 저장',
+    summary: '[finish] 생체 수면 데이터 저장',
     description:
       '윤지언니가 나한테 넘겨줄 때 쓰는 API / Authorization : Bearer + [token] 필요',
   })
