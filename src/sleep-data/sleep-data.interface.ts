@@ -1,5 +1,5 @@
 export interface SleepDataItem {
-  date: string; // -> 이거 Date로 바꿔야됨. mongoDB의.
+  date: Date; // MongoDB의 Date 형식
   userID: string;
   startTime: string;
   endTime: string;

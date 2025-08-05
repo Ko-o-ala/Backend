@@ -35,11 +35,12 @@ export class SleepDataService {
     const sleepItems = raw as SleepDataItem[];
 
     for (const item of sleepItems) {
-      const current = grouped.get(item.date);
+      const dateKey = dayjs(item.date).format('YYYY-MM-DD');
+      const current = grouped.get(dateKey);
       if (current) {
         current.push(item);
       } else {
-        grouped.set(item.date, [item]);
+        grouped.set(dateKey, [item]);
       }
     }
 
@@ -134,9 +135,6 @@ export class SleepDataService {
       userID,
       averageStartTime: this.formatMinutesToHHMM(avgStartMinutes),
       averageEndTime: this.formatMinutesToHHMM(avgEndMinutes),
-      averageWakeCount: average(
-        data.map((d) => (d.segments?.length ? d.segments.length - 1 : 0)),
-      ),
       averageTotalSleepDuration: average(data.map((d) => d.totalSleepDuration)),
       averageDeepSleepDuration: average(data.map((d) => d.deepSleepDuration)),
       averageRemSleepDuration: average(data.map((d) => d.remSleepDuration)),
@@ -162,10 +160,13 @@ export class SleepDataService {
   async saveSleepData(dto: CreateSleepDataDto) {
     const { userID, date, startTime } = dto;
 
+    // 문자열 date를 Date 객체로 변환
+    const dateObject = new Date(date);
+
     // 중복 저장 방지: userID + date + startTime 기준
     const exists = await this.sleepModel.findOne({
       userID,
-      date,
+      date: dateObject,
       startTime,
     });
 
@@ -175,7 +176,11 @@ export class SleepDataService {
       );
     }
 
-    await this.sleepModel.create(dto);
+    // Date 객체로 변환된 데이터 저장
+    await this.sleepModel.create({
+      ...dto,
+      date: dateObject,
+    });
     return { message: '생체 수면 데이터가 성공적으로 저장되었습니다.' };
   }
 }

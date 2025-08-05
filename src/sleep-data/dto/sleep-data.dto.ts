@@ -1,23 +1,5 @@
-import {
-  IsString,
-  IsInt,
-  IsArray,
-  IsOptional,
-  ValidateNested,
-  Matches,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-class SleepSegment {
-  @ApiProperty({ example: '22:30', description: '수면 시작 시각 (HH:mm)' })
-  @IsString()
-  start: string;
-
-  @ApiProperty({ example: '01:00', description: '수면 종료 시각 (HH:mm)' })
-  @IsString()
-  end: string;
-}
+import { IsString, IsInt, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSleepDataDto {
   @ApiProperty({ example: 'seoin2743', description: '사용자 ID' })
@@ -26,6 +8,9 @@ export class CreateSleepDataDto {
 
   @ApiProperty({ example: '2025-06-30', description: '수면 날짜 (YYYY-MM-DD)' })
   @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'date must be in YYYY-MM-DD format',
+  })
   date: string;
 
   @ApiProperty({
@@ -47,20 +32,6 @@ export class CreateSleepDataDto {
     message: 'endTime must be in HH:mm format',
   })
   endTime: string;
-
-  @ApiPropertyOptional({
-    description: '수면 중 중간에 깼다가 다시 잤을 경우의 구간들 (HH:mm)',
-    type: [SleepSegment],
-    example: [
-      { start: '22:30', end: '01:00' },
-      { start: '02:00', end: '07:30' },
-    ],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SleepSegment)
-  @IsOptional()
-  segments?: SleepSegment[];
 
   @ApiProperty({ example: 460, description: '총 수면 시간 (분 단위)' })
   @IsInt()

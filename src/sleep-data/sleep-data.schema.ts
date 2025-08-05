@@ -7,20 +7,13 @@ export class SleepData extends Document {
   userID: string;
 
   @Prop({ required: true })
-  date: string; // 'YYYY-MM-DD'
+  date: Date; // 'YYYY-MM-DD'
 
   @Prop({ required: true })
   startTime: string; // HH:mm
 
   @Prop({ required: true })
   endTime: string; // HH:mm
-
-  @Prop({
-    type: [{ start: String, end: String }],
-    required: false,
-    default: [],
-  })
-  segments: { start: string; end: string }[];
 
   @Prop({ required: true })
   totalSleepDuration: number;
