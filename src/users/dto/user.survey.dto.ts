@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsIn, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import { RequiredIfOther } from 'src/common/validators/required.if.other';
 
 export class UserSurveyDto {
@@ -263,4 +263,12 @@ export class UserSurveyDto {
   })
   @IsIn(['text', 'graph', 'voice'])
   preferredFeedbackFormat: string;
+
+  // 선호도 vs 효과성 밸런스 (0.0~1.0)
+  @ApiProperty({
+    example: '0.6',
+    description: 'preferenceBalance',
+  })
+  @IsNumber()
+  preferenceBalance: number;
 }

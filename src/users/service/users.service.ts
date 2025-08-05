@@ -5,10 +5,16 @@ import * as bcrypt from 'bcrypt';
 import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
 import { UserSurveyDto } from '../dto/user.survey.dto';
 import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly userRepository: UsersRepository) {}
+  constructor(
+    private readonly userRepository: UsersRepository,
+    private readonly authService: AuthService,
+  ) {}
+
+  // dependency injection을 하려면 해당하는 모듈을 module파일에서 import 해야됨.
 
   async getSurveyByUserID(userID: string) {
     const user = await this.userRepository.findByUserID(userID);
@@ -67,7 +73,14 @@ export class UsersService {
       age,
       gender,
     });
-    return user.readOnlyData;
+
+    const payload = { userId: userID, sub: user._id };
+    const token = this.authService.getSignedJwtToken(payload); // `jwtLogIn`과 비슷한 형태의 메서드 사용
+
+    return {
+      ...user.readOnlyData,
+      token,
+    };
   }
 
   async updateUserProfile(userId: string, updateDto: UserUpdateProfileDto) {

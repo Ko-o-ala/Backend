@@ -11,6 +11,10 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  getSignedJwtToken(payload: any): string {
+    return this.jwtService.sign(payload);
+  }
+
   async jwtLogIn(data: LoginRequestDto) {
     const { userID, password } = data;
 
