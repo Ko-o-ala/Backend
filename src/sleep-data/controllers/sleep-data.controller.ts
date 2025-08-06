@@ -37,14 +37,6 @@ export class SleepDataController {
     return this.sleepDataService.saveSleepData(dto);
   }
 
-  @Get(':userID/recent')
-  @ApiOperation({
-    summary: '특정 유저의 최근 7일 평균 수면 통계량 데이터 조회',
-  })
-  async getRecentAverage(@Param('userID') userID: string) {
-    return this.sleepDataService.getRecentAverages(userID);
-  }
-
   @Get(':userID/:date')
   @ApiOperation({
     summary: '특정 날짜 수면 데이터 조회 (30일 이내)',
