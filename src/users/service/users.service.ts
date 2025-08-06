@@ -6,6 +6,7 @@ import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
 import { UserSurveyDto } from '../dto/user.survey.dto';
 import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
 import { AuthService } from 'src/auth/auth.service';
+import { User } from '../users.schema';
 
 @Injectable()
 export class UsersService {
@@ -58,7 +59,7 @@ export class UsersService {
   }
 
   async signUp(body: UserRequestDto) {
-    const { userID, name, password, age, gender } = body;
+    const { userID, name, password, birthdate, gender } = body;
     const isUserExist = await this.userRepository.existByUserID(userID);
 
     if (isUserExist) {
@@ -70,7 +71,7 @@ export class UsersService {
       userID,
       name,
       password: hashedPassword,
-      age,
+      birthdate: new Date(birthdate),
       gender,
     });
 
@@ -90,15 +91,29 @@ export class UsersService {
       throw new HttpException('유저를 찾을 수 없습니다.', 404);
     }
 
+    const updateData: Partial<User> = {};
+
+    if (updateDto.name) {
+      updateData.name = updateDto.name;
+    }
+
     if (updateDto.password) {
       const hashed = await bcrypt.hash(updateDto.password, 10);
-      updateDto.password = hashed;
+      updateData.password = hashed;
+    }
+
+    if (updateDto.birthdate) {
+      updateData.birthdate = new Date(updateDto.birthdate);
+    }
+
+    if (updateDto.gender !== undefined) {
+      updateData.gender = updateDto.gender;
     }
 
     // 프로필 업데이트
     const updatedUser = await this.userRepository.updateById(
-      user._id as string,
-      updateDto,
+      String(user._id),
+      updateData,
     );
 
     if (!updatedUser) {

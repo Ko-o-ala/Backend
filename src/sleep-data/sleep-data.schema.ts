@@ -1,20 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema({ timestamps: true })
-export class SleepData extends Document {
-  @Prop({ required: true })
-  userID: string;
-
-  @Prop({ required: true })
-  date: Date; // 'YYYY-MM-DD'
-
+@Schema({ _id: false })
+export class SleepTime {
   @Prop({ required: true })
   startTime: string; // HH:mm
 
   @Prop({ required: true })
   endTime: string; // HH:mm
+}
 
+@Schema({ _id: false })
+export class Duration {
   @Prop({ required: true })
   totalSleepDuration: number;
 
@@ -29,6 +26,21 @@ export class SleepData extends Document {
 
   @Prop({ required: true })
   awakeDuration: number;
+}
+
+@Schema({ timestamps: true })
+export class SleepData extends Document {
+  @Prop({ required: true })
+  userID: string;
+
+  @Prop({ required: true })
+  date: Date; // 'YYYY-MM-DD'
+
+  @Prop({ type: SleepTime, required: true })
+  sleepTime: SleepTime;
+
+  @Prop({ type: Duration, required: true })
+  Duration: Duration;
 
   @Prop({ required: true })
   sleepScore: number;

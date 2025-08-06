@@ -59,7 +59,10 @@ export class UsersController {
     description: 'Server Error...',
   })
   @ApiSuccessResponse(ReadOnlyUserDto, 201)
-  @ApiOperation({ summary: '[finish] 회원가입' })
+  @ApiOperation({
+    summary: '[finish] 회원가입',
+    description: 'gender 0 = none, 1 = male, 2 = female',
+  })
   @Post('signup')
   async signUp(@Body() body: UserRequestDto) {
     return await this.userService.signUp(body);

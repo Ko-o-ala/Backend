@@ -68,19 +68,6 @@ export class SleepDataService {
     );
   }
 
-  async deleteOldSleepData() {
-    const thresholdDate = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
-
-    const result = await this.sleepModel.deleteMany({
-      date: { $lt: thresholdDate },
-    });
-
-    return {
-      deletedCount: result.deletedCount,
-      message: '30일이 지난 수면 데이터가 성공적으로 삭제되었습니다.',
-    };
-  }
-
   async getSleepDataByDate(userID: string, date: string) {
     const thirtyDaysAgo = dayjs().subtract(30, 'day');
     const targetDate = dayjs(date);
@@ -125,21 +112,29 @@ export class SleepDataService {
         : 0;
 
     const avgStartMinutes = average(
-      data.map((d) => this.parseTimeToMinutes(d.startTime)),
+      data.map((d) => this.parseTimeToMinutes(d.sleepTime.startTime)),
     );
     const avgEndMinutes = average(
-      data.map((d) => this.parseTimeToMinutes(d.endTime)),
+      data.map((d) => this.parseTimeToMinutes(d.sleepTime.endTime)),
     );
 
     const result = {
       userID,
       averageStartTime: this.formatMinutesToHHMM(avgStartMinutes),
       averageEndTime: this.formatMinutesToHHMM(avgEndMinutes),
-      averageTotalSleepDuration: average(data.map((d) => d.totalSleepDuration)),
-      averageDeepSleepDuration: average(data.map((d) => d.deepSleepDuration)),
-      averageRemSleepDuration: average(data.map((d) => d.remSleepDuration)),
-      averageLightSleepDuration: average(data.map((d) => d.lightSleepDuration)),
-      averageAwakeDuration: average(data.map((d) => d.awakeDuration)),
+      averageTotalSleepDuration: average(
+        data.map((d) => d.Duration.totalSleepDuration),
+      ),
+      averageDeepSleepDuration: average(
+        data.map((d) => d.Duration.deepSleepDuration),
+      ),
+      averageRemSleepDuration: average(
+        data.map((d) => d.Duration.remSleepDuration),
+      ),
+      averageLightSleepDuration: average(
+        data.map((d) => d.Duration.lightSleepDuration),
+      ),
+      averageAwakeDuration: average(data.map((d) => d.Duration.awakeDuration)),
       averageSleepScore: average(data.map((d) => d.sleepScore)),
     };
 
@@ -158,7 +153,7 @@ export class SleepDataService {
   }
 
   async saveSleepData(dto: CreateSleepDataDto) {
-    const { userID, date, startTime } = dto;
+    const { userID, date, sleepTime, Duration, sleepScore } = dto;
 
     // 문자열 date를 Date 객체로 변환
     const dateObject = new Date(date);
@@ -167,7 +162,7 @@ export class SleepDataService {
     const exists = await this.sleepModel.findOne({
       userID,
       date: dateObject,
-      startTime,
+      'sleepTime.startTime': sleepTime.startTime,
     });
 
     if (exists) {
@@ -176,11 +171,16 @@ export class SleepDataService {
       );
     }
 
-    // Date 객체로 변환된 데이터 저장
-    await this.sleepModel.create({
-      ...dto,
+    // 새로운 구조 그대로 저장
+    const sleepData = {
+      userID,
       date: dateObject,
-    });
+      sleepTime,
+      Duration,
+      sleepScore,
+    };
+
+    await this.sleepModel.create(sleepData);
     return { message: '생체 수면 데이터가 성공적으로 저장되었습니다.' };
   }
 }

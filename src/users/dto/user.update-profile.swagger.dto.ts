@@ -5,7 +5,7 @@ import { UserSurveyDto } from './user.survey.dto';
 class ExistingUserUpdateProfileDto extends PickType(UserUpdateProfileDto, [
   'name',
   'gender',
-  'age',
+  'birthdate',
 ] as const) {}
 
 export class UpdateProfileSwaggerDataDto extends ExistingUserUpdateProfileDto {

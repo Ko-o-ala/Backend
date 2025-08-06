@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 import { Document, SchemaOptions } from 'mongoose';
 import { Survey } from './types/survey.type';
 
@@ -42,22 +42,22 @@ export class User extends Document {
   password: string;
 
   @ApiProperty({
-    example: '22',
-    description: 'age',
+    example: '2003-08-06',
+    description: '생년월일 (YYYY-MM-DD)',
     required: true,
   })
   @Prop({ required: true })
-  @IsNumber()
-  age: number;
+  @IsString()
+  birthdate: Date;
 
   @ApiProperty({
-    example: 'female',
-    description: 'gender',
+    example: 2,
+    description: '성별 (0 = none, 1 = male, 2 = female)',
     required: true,
   })
   @Prop({ required: true })
-  @IsIn(['none', 'female', 'male'])
-  gender: string;
+  @IsIn([0, 1, 2])
+  gender: number;
 
   @Prop({ type: Object })
   survey: Survey;
@@ -69,8 +69,8 @@ export class User extends Document {
     id: string;
     userId: string;
     name: string;
-    age: number;
-    gender: string;
+    birthdate: Date;
+    gender: number;
     survey: object;
   };
 }
@@ -82,7 +82,7 @@ UserSchema.virtual('readOnlyData').get(function (this: User) {
     id: this.id,
     userID: this.userID,
     name: this.name,
-    age: this.age,
+    birthdate: this.birthdate,
     gender: this.gender,
     survey: this.survey,
   };

@@ -5,7 +5,7 @@ export class ReadOnlyUserDto extends PickType(User, [
   'userID',
   'name',
   'gender',
-  'age',
+  'birthdate',
 ] as const) {
   @ApiProperty({
     example: '684e5f89b07fd1bd137a81c0',

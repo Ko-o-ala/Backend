@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   NotFoundException,
   Param,
@@ -47,12 +46,6 @@ export class SleepDataController {
     @Param('date') date: string,
   ) {
     return this.sleepDataService.getSleepDataByDate(userID, date);
-  }
-
-  @Delete('auto-cleanup')
-  @ApiOperation({ summary: '30일 초과된 수면 데이터 자동 삭제' })
-  async deleteOldData() {
-    return this.sleepDataService.deleteOldSleepData();
   }
 
   @Get('user/:userID/last')
