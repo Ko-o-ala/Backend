@@ -28,6 +28,18 @@ export class Duration {
   awakeDuration: number;
 }
 
+@Schema({ _id: false })
+export class Segment {
+  @Prop({ required: true })
+  startTime: string;
+
+  @Prop({ required: true })
+  endTime: string;
+
+  @Prop({ required: true, enum: ['rem', 'awake', 'deep', 'light'] })
+  stage: string;
+}
+
 @Schema({ timestamps: true })
 export class SleepData extends Document {
   @Prop({ required: true })
@@ -41,6 +53,9 @@ export class SleepData extends Document {
 
   @Prop({ type: Duration, required: true })
   Duration: Duration;
+
+  @Prop({ type: [Segment], required: true })
+  segments: Segment[];
 
   @Prop({ required: true })
   sleepScore: number;

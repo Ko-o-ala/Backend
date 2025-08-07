@@ -153,7 +153,7 @@ export class SleepDataService {
   }
 
   async saveSleepData(dto: CreateSleepDataDto) {
-    const { userID, date, sleepTime, Duration, sleepScore } = dto;
+    const { userID, date, sleepTime, Duration, segments, sleepScore } = dto;
 
     // 문자열 date를 Date 객체로 변환
     const dateObject = new Date(date);
@@ -177,6 +177,7 @@ export class SleepDataService {
       date: dateObject,
       sleepTime,
       Duration,
+      segments,
       sleepScore,
     };
 

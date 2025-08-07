@@ -4,6 +4,8 @@ import {
   Matches,
   ValidateNested,
   IsObject,
+  IsArray,
+  IsIn,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -52,6 +54,21 @@ export class DurationDto {
   awakeDuration: number;
 }
 
+export class SegmentDto {
+  @ApiProperty({ example: '23:05', description: '세그먼트 시작 시각 (HH:mm)' })
+  @IsString()
+  startTime: string;
+
+  @ApiProperty({ example: '23:30', description: '세그먼트 종료 시각 (HH:mm)' })
+  @IsString()
+  endTime: string;
+
+  @ApiProperty({ example: 'light', description: '수면 단계' })
+  @IsString()
+  @IsIn(['rem', 'awake', 'deep', 'light'])
+  stage: string;
+}
+
 export class CreateSleepDataDto {
   @ApiProperty({ example: 'seoin2743', description: '사용자 ID' })
   @IsString()
@@ -90,6 +107,19 @@ export class CreateSleepDataDto {
   @ValidateNested()
   @Type(() => DurationDto)
   Duration: DurationDto;
+
+  @ApiProperty({
+    example: [
+      { startTime: '23:05', endTime: '23:30', stage: 'light' },
+      { startTime: '23:30', endTime: '00:10', stage: 'deep' },
+    ],
+    description: '수면 세그먼트 배열',
+    type: [SegmentDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SegmentDto)
+  segments: SegmentDto[];
 
   @ApiProperty({ example: 82, description: '수면 점수 (0~100)' })
   @IsInt()

@@ -30,7 +30,7 @@ export class SleepDataController {
   @ApiOperation({
     summary: '[finish] 생체 수면 데이터 저장',
     description:
-      '윤지언니가 나한테 넘겨줄 때 쓰는 API / Authorization : Bearer + [token] 필요',
+      '윤지언니가 나한테 넘겨줄 때 쓰는 API / Authorization : Bearer + [token] 필요 / segment의 stage는 light, deep, awake, rem만 가능',
   })
   async saveSleepData(@Body() dto: CreateSleepDataDto) {
     return this.sleepDataService.saveSleepData(dto);
