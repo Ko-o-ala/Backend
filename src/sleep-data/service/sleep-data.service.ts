@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { SleepData } from '../sleep-data.schema';
+import { MonthAvgSleepData } from '../month-avg-sleep-data.schema';
 import { CreateSleepDataDto } from '../dto/sleep-data.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as dayjs from 'dayjs';
@@ -16,6 +17,8 @@ import { SleepDataItem } from '../sleep-data.interface';
 export class SleepDataService {
   constructor(
     @InjectModel(SleepData.name) private readonly sleepModel: Model<SleepData>,
+    @InjectModel(MonthAvgSleepData.name)
+    private readonly monthAvgModel: Model<MonthAvgSleepData>,
   ) {}
 
   async getLastTwoNightSleeps(userID: string) {
@@ -183,5 +186,25 @@ export class SleepDataService {
 
     await this.sleepModel.create(sleepData);
     return { message: '생체 수면 데이터가 성공적으로 저장되었습니다.' };
+  }
+
+  async getMonthAvgSleepData(userID: string) {
+    const data = await this.monthAvgModel
+      .find({ '_id.userID': userID })
+      .sort({ '_id.month': -1 })
+      .lean();
+
+    if (!data || data.length === 0) {
+      throw new NotFoundException(
+        '해당 사용자의 월별 평균 수면 데이터를 찾을 수 없습니다.',
+      );
+    }
+
+    return data.map((item) => ({
+      userID: item._id.userID,
+      month: item._id.month,
+      avgSleepScore: item.avgSleepScore,
+      avgTotalSleepDuration: item.avgTotalSleepDuration,
+    }));
   }
 }

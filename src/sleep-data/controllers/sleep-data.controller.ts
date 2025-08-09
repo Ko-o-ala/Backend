@@ -16,6 +16,7 @@ import { ApiOperation } from '@nestjs/swagger';
 import { CreateSleepDataDto } from '../dto/sleep-data.dto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { SleepDataSuccessReturnDto } from '../dto/sleep-data.success.return.dto';
+import { MonthAvgSleepDataResponseDto } from '../dto/month-avg-sleep-data.response.dto';
 import { ApiSuccessResponse } from 'src/common/decorators/api-success-response.decorator';
 
 @Controller('sleep-data')
@@ -36,16 +37,16 @@ export class SleepDataController {
     return this.sleepDataService.saveSleepData(dto);
   }
 
-  @Get(':userID/:date')
+  @UseGuards(JwtAuthGuard)
+  @ApiSuccessResponse(MonthAvgSleepDataResponseDto)
+  @Get(':userID/month-avg')
   @ApiOperation({
-    summary: '특정 날짜 수면 데이터 조회 (30일 이내)',
-    description: '날짜는 YYYY-MM-DD 형식만 허용',
+    summary: '[finish] 월별 평균 수면 데이터 조회',
+    description:
+      '사용자의 월별 평균 수면 점수와 총 수면 시간을 반환함. / Authorization : Bearer + [token] 필요',
   })
-  async getSleepDataByDate(
-    @Param('userID') userID: string,
-    @Param('date') date: string,
-  ) {
-    return this.sleepDataService.getSleepDataByDate(userID, date);
+  async getMonthAvgSleepData(@Param('userID') userID: string) {
+    return this.sleepDataService.getMonthAvgSleepData(userID);
   }
 
   @Get('user/:userID/last')
@@ -60,5 +61,17 @@ export class SleepDataController {
       throw new NotFoundException('해당 유저의 최근 밤잠 데이터가 없습니다.');
     }
     return data;
+  }
+
+  @Get(':userID/:date')
+  @ApiOperation({
+    summary: '특정 날짜 수면 데이터 조회 (30일 이내)',
+    description: '날짜는 YYYY-MM-DD 형식만 허용',
+  })
+  async getSleepDataByDate(
+    @Param('userID') userID: string,
+    @Param('date') date: string,
+  ) {
+    return this.sleepDataService.getSleepDataByDate(userID, date);
   }
 }
