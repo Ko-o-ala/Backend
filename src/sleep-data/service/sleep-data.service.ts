@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,7 +10,6 @@ import { CreateSleepDataDto } from '../dto/sleep-data.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as dayjs from 'dayjs';
 import { Cron } from '@nestjs/schedule';
-import { SleepDataItem } from '../sleep-data.interface';
 
 @Injectable()
 export class SleepDataService {
@@ -20,43 +18,6 @@ export class SleepDataService {
     @InjectModel(MonthAvgSleepData.name)
     private readonly monthAvgModel: Model<MonthAvgSleepData>,
   ) {}
-
-  async getLastTwoNightSleeps(userID: string) {
-    const today = dayjs().format('YYYY-MM-DD');
-    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
-
-    const raw = await this.sleepModel
-      .find({
-        userID,
-        date: { $in: [today, yesterday] },
-      })
-      .sort({ date: -1, startTime: -1 })
-      .lean();
-
-    const grouped = new Map<string, SleepDataItem[]>();
-
-    const sleepItems = raw as SleepDataItem[];
-
-    for (const item of sleepItems) {
-      const dateKey = dayjs(item.date).format('YYYY-MM-DD');
-      const current = grouped.get(dateKey);
-      if (current) {
-        current.push(item);
-      } else {
-        grouped.set(dateKey, [item]);
-      }
-    }
-
-    const result: SleepDataItem[] = [];
-    for (const date of [today, yesterday]) {
-      const items = grouped.get(date);
-      if (Array.isArray(items) && items.length > 0) {
-        result.push(items[0]); // 가장 늦게 시작한 밤잠
-      }
-    }
-
-    return result;
-  }
 
   @Cron('0 15 * * *') // 매일 오후 3시 (서버 시간 기준)
   async autoCleanup() {
@@ -69,31 +30,6 @@ export class SleepDataService {
     console.log(
       `[AUTO CLEANUP] Deleted ${result.deletedCount} entries older than 30 days`,
     );
-  }
-
-  async getSleepDataByDate(userID: string, date: string) {
-    const thirtyDaysAgo = dayjs().subtract(30, 'day');
-    const targetDate = dayjs(date);
-
-    if (!targetDate.isValid()) {
-      throw new BadRequestException(
-        '유효하지 않은 날짜 형식입니다. (YYYY-MM-DD)',
-      );
-    }
-
-    if (targetDate.isBefore(thirtyDaysAgo)) {
-      throw new BadRequestException('30일 이전의 데이터는 조회할 수 없습니다.');
-    }
-
-    const data = await this.sleepModel.find({ userID, date });
-
-    if (!data || data.length === 0) {
-      throw new NotFoundException(
-        '해당 날짜의 수면 데이터를 찾을 수 없습니다.',
-      );
-    }
-
-    return data;
   }
 
   async getRecentAverages(userID: string) {

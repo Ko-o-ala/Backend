@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
   Post,
   UseFilters,
@@ -47,31 +46,5 @@ export class SleepDataController {
   })
   async getMonthAvgSleepData(@Param('userID') userID: string) {
     return this.sleepDataService.getMonthAvgSleepData(userID);
-  }
-
-  @Get('user/:userID/last')
-  @ApiOperation({
-    summary: '오늘 + 어제 밤잠 생체 데이터 조회',
-    description:
-      '추천 알고리즘에 제공할 오늘과 어제의 최근 밤잠 생체 데이터를 반환합니다.',
-  })
-  async getLastTwoNightSleeps(@Param('userID') userID: string) {
-    const data = await this.sleepDataService.getLastTwoNightSleeps(userID);
-    if (!data || data.length === 0) {
-      throw new NotFoundException('해당 유저의 최근 밤잠 데이터가 없습니다.');
-    }
-    return data;
-  }
-
-  @Get(':userID/:date')
-  @ApiOperation({
-    summary: '특정 날짜 수면 데이터 조회 (30일 이내)',
-    description: '날짜는 YYYY-MM-DD 형식만 허용',
-  })
-  async getSleepDataByDate(
-    @Param('userID') userID: string,
-    @Param('date') date: string,
-  ) {
-    return this.sleepDataService.getSleepDataByDate(userID, date);
   }
 }
