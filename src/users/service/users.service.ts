@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
 import { UserSurveyDto } from '../dto/user.survey.dto';
 import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
-import { AuthService } from 'src/auth/auth.service';
+import { AuthService } from '../../auth/auth.service';
 import { User } from '../users.schema';
 
 @Injectable()

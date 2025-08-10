@@ -20,12 +20,12 @@ export type Survey = {
   calmingSoundType: string;
   calmingSoundTypeOther: string;
   sleepDevicesUsed: string[];
-  soundAutoOffType: string;
   timeToFallAsleep: string;
   caffeineIntakeLevel: string;
   exerciseFrequency: string;
+  exerciseWhen: string;
   screenTimeBeforeSleep: string;
   stressLevel: string;
-  sleepGoal: string;
-  preferredFeedbackFormat: string;
+  sleepGoal: string[];
+  preferenceBalance: number;
 };
