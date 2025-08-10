@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -30,6 +31,26 @@ export class SleepDataService {
     console.log(
       `[AUTO CLEANUP] Deleted ${result.deletedCount} entries older than 30 days`,
     );
+  }
+
+  async getSleepDataByDate(userID: string, date: string) {
+    const targetDate = dayjs(date);
+
+    if (!targetDate.isValid()) {
+      throw new BadRequestException(
+        '유효하지 않은 날짜 형식입니다. (YYYY-MM-DD)',
+      );
+    }
+
+    const data = await this.sleepModel.find({ userID, date });
+
+    if (!data || data.length === 0) {
+      throw new NotFoundException(
+        '해당 날짜의 수면 데이터를 찾을 수 없습니다.',
+      );
+    }
+
+    return data;
   }
 
   async getRecentAverages(userID: string) {
