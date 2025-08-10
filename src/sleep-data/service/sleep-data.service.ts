@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { SleepData } from '../sleep-data.schema';
-import { MonthAvgSleepData } from '../month-avg-sleep-data.schema';
+import { SleepData } from '../schema/sleep-data.schema';
+import { MonthAvgSleepData } from '../schema/month-avg-sleep-data.schema';
 import { CreateSleepDataDto } from '../dto/sleep-data.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as dayjs from 'dayjs';
