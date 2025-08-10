@@ -154,7 +154,8 @@ export class UsersController {
   @UseGuards(InternalApiKeyGuard)
   @Get('survey/:userID/result')
   @ApiOperation({
-    summary: '[finish] 추천 알고리즘이 사용자 설문조사 데이터 조회',
+    summary:
+      '[finish] 추천 알고리즘이 사용자 설문조사 데이터 조회 / 아니 근데 이거 필요 없어서 그냥 내가 다른 API랑 합치면 될듯 ',
     description:
       'Headers에 들어가야되는 값 ⇒ x-api-key : 나한테 물어보셈(Internal API Key 인증 필요)',
   })

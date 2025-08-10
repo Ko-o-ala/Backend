@@ -202,21 +202,13 @@ export class UserSurveyDto {
 
   // Q18
   @ApiProperty({
-    example: 'autoDetect',
-    description: 'soundAutoOffType',
-  })
-  @IsIn(['fixedTime', 'autoDetect', 'manual', 'notUsed'])
-  soundAutoOffType: string;
-
-  // Q19
-  @ApiProperty({
     example: 'over30min',
     description: 'timeToFallAsleep',
   })
   @IsIn(['under5min', '5to15min', '15to30min', 'over30min'])
   timeToFallAsleep: string;
 
-  // Q20
+  // Q19
   @ApiProperty({
     example: '1to2cups',
     description: 'caffeineIntakeLevel',
@@ -224,13 +216,21 @@ export class UserSurveyDto {
   @IsIn(['none', '1to2cups', 'over3cups'])
   caffeineIntakeLevel: string;
 
-  // Q21
+  // Q20
   @ApiProperty({
-    example: 'dailyMorning',
+    example: 'daily',
     description: 'exerciseFrequency',
   })
-  @IsIn(['none', '2to3week', 'dailyMorning'])
+  @IsIn(['none', '2to3week', 'daily'])
   exerciseFrequency: string;
+
+  // Q21
+  @ApiProperty({
+    example: 'morning',
+    description: 'exerciseWhen',
+  })
+  @IsIn(['night', 'day', 'morning', 'none'])
+  exerciseWhen: string;
 
   // Q22
   @ApiProperty({
@@ -250,19 +250,12 @@ export class UserSurveyDto {
 
   // Q24
   @ApiProperty({
-    example: 'stayAsleep',
+    example: ['fallAsleepFast', 'stayAsleep'],
     description: 'sleepGoal',
   })
-  @IsIn(['deepSleep', 'fallAsleepFast', 'stayAsleep'])
-  sleepGoal: string;
-
-  // Q25
-  @ApiProperty({
-    example: 'voice',
-    description: 'preferredFeedbackFormat',
-  })
-  @IsIn(['text', 'graph', 'voice'])
-  preferredFeedbackFormat: string;
+  @IsArray()
+  @IsIn(['deepSleep', 'fallAsleepFast', 'stayAsleep'], { each: true })
+  sleepGoal: string[];
 
   // 선호도 vs 효과성 밸런스 (0.0~1.0)
   @ApiProperty({

@@ -50,7 +50,7 @@ export class SleepDataController {
 
   @Get(':userID/:date')
   @ApiOperation({
-    summary: '특정 날짜 수면 데이터 조회',
+    summary: '[finish] 특정 날짜 수면 데이터 조회',
     description: '날짜는 YYYY-MM-DD 형식만 허용',
   })
   async getSleepDataByDate(
