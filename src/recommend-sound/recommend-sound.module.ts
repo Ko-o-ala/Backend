@@ -1,20 +1,26 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HttpModule } from '@nestjs/axios';
+import { RecommendSoundController } from './controllers/recommend-sound.controller';
 import { RecommendSoundService } from './service/recommend-sound.service';
-import { RecommendSoundController } from './controller/recommend-sound.controller';
-import { RecommendSound, RecommendSoundSchema } from './recommend-sound.schema';
-import { UsersModule } from '../users/users.module';
-import { SleepDataModule } from '../sleep-data/sleep-data.module';
+import {
+  RecommendSound,
+  RecommendSoundSchema,
+} from './schema/recommend-sound.schema';
+import { User, UserSchema } from '../users/users.schema';
+import {
+  SleepData,
+  SleepDataSchema,
+} from '../sleep-data/schema/sleep-data.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: RecommendSound.name, schema: RecommendSoundSchema },
+      { name: User.name, schema: UserSchema },
+      { name: SleepData.name, schema: SleepDataSchema },
     ]),
     HttpModule,
-    UsersModule,
-    SleepDataModule,
   ],
   controllers: [RecommendSoundController],
   providers: [RecommendSoundService],
