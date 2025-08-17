@@ -169,7 +169,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Patch('/modify/preferred/sounds/rank')
   @ApiOperation({
-    summary: '사용자 선호 사운드 rank 수정',
+    summary: '[finish] 사용자 선호 사운드 rank 수정',
     description:
       '1. Authorization : Bearer + [token] 필요 / 2. 특정 날짜의 recommendSounds get해서 "recommended_sounds"필드의 rank를 사용자가 수정하여 Users 컬렉션의 preferredSounds 필드에 저장하게 함. 여기서 프론트가 이 API 호출할 때 "recommended_sounds"필드를 "preferredSounds" 필드명으로 바꿔서 전달해야됨.',
   })
