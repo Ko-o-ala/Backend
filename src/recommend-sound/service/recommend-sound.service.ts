@@ -8,6 +8,7 @@ import { User } from '../../users/users.schema';
 
 import { ExecuteRecommendRequestDto } from '../dto/execute-recommend.request.dto';
 import { ExecuteRecommendResponseDto } from '../dto/execute-recommend.response.dto';
+import { GetRecommendResultsResponseDto } from '../dto/get-recommend-results.response.dto';
 
 @Injectable()
 export class RecommendSoundService {
@@ -469,7 +470,6 @@ export class RecommendSoundService {
         recommended_sounds: Array<{
           filename: string;
           rank: number;
-          preference: string;
         }>;
       } = response.data;
 
@@ -496,6 +496,74 @@ export class RecommendSoundService {
       console.error('추천 알고리즘 실행 중 오류:', error);
       throw new HttpException(
         '추천 알고리즘 실행 중 오류가 발생했습니다.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getRecommendResults(
+    userID: string,
+    date: string,
+  ): Promise<GetRecommendResultsResponseDto> {
+    try {
+      // 날짜 형식 검증 (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(date)) {
+        throw new HttpException(
+          '날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용해주세요.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 사용자 존재 여부 확인
+      const user = await this.userModel.findOne({ userID }).exec();
+      if (!user) {
+        throw new HttpException(
+          '사용자를 찾을 수 없습니다.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // 날짜를 Date 객체로 변환 (UTC 기준)
+      const targetDate = new Date(date + 'T00:00:00.000Z');
+      const nextDate = new Date(targetDate);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+      // 해당 날짜의 추천 결과 조회
+      const recommendation = await this.recommendSoundModel
+        .findOne({
+          userId: userID,
+          date: {
+            $gte: targetDate,
+            $lt: nextDate,
+          },
+        })
+        .exec();
+
+      if (!recommendation) {
+        throw new HttpException(
+          '해당 날짜의 추천 결과를 찾을 수 없습니다.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // 응답 데이터 구성 (createdAt, updatedAt, __v 제외)
+      return {
+        userId: recommendation.userId,
+        date: date,
+        recommendation_text: recommendation.recommendation_text,
+        recommended_sounds: recommendation.recommended_sounds.map(sound => ({
+          filename: sound.filename,
+          rank: sound.rank,
+        })),
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('추천 결과 조회 중 오류:', error);
+      throw new HttpException(
+        '추천 결과 조회 중 오류가 발생했습니다.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

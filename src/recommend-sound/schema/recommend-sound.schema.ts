@@ -8,9 +8,6 @@ export class RecommendedSound {
 
   @Prop({ required: true })
   rank: number;
-
-  @Prop({ required: true })
-  preference: string;
 }
 
 @Schema({ timestamps: true, collection: 'recommendSounds' })

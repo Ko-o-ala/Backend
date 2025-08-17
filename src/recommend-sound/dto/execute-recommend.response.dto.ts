@@ -12,12 +12,6 @@ export class RecommendedSoundDto {
     description: '추천 순위',
   })
   rank: number;
-
-  @ApiProperty({
-    example: 'top',
-    description: '사용자 선호도',
-  })
-  preference: string;
 }
 
 export class ExecuteRecommendResponseDto {
@@ -61,11 +55,7 @@ export class ExecuteRecommendResponseDto {
               example: 1,
               description: '추천 순위',
             },
-            preference: {
-              type: 'string',
-              example: 'top',
-              description: '사용자 선호도',
-            },
+
           },
         },
         description: '추천된 사운드 목록',
