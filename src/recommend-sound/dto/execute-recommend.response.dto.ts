@@ -49,7 +49,24 @@ export class ExecuteRecommendResponseDto {
       recommended_sounds: {
         type: 'array',
         items: {
-          $ref: '#/components/schemas/RecommendedSoundDto',
+          type: 'object',
+          properties: {
+            filename: {
+              type: 'string',
+              example: 'NATURE_1_WATER.mp3',
+              description: '추천된 사운드 파일명',
+            },
+            rank: {
+              type: 'number',
+              example: 1,
+              description: '추천 순위',
+            },
+            preference: {
+              type: 'string',
+              example: 'top',
+              description: '사용자 선호도',
+            },
+          },
         },
         description: '추천된 사운드 목록',
       },

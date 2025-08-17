@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { UserUpdateProfileDto } from '../dto/users.update-profile.dto';
 import { UserSurveyDto } from '../dto/user.survey.dto';
 import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
+import { UpdatePreferredSoundsRankDto } from '../dto/update-preferred-sounds-rank.dto';
 import { AuthService } from '../../auth/auth.service';
 import { User } from '../users.schema';
 
@@ -121,5 +122,40 @@ export class UsersService {
     }
 
     return updatedUser.readOnlyData;
+  }
+
+  async updatePreferredSoundsRank(
+    userID: string,
+    dto: UpdatePreferredSoundsRankDto,
+  ) {
+    const user = await this.userRepository.findByUserID(userID);
+
+    if (!user) {
+      throw new HttpException('유저를 찾을 수 없습니다.', 404);
+    }
+
+    // rank 중복 검증
+    const ranks = dto.preferredSounds.map((sound) => sound.rank);
+    const uniqueRanks = new Set(ranks);
+    if (ranks.length !== uniqueRanks.size) {
+      throw new BadRequestException('중복된 rank가 존재합니다.');
+    }
+
+    // rank가 1부터 시작하는지 검증
+    const minRank = Math.min(...ranks);
+    if (minRank < 1) {
+      throw new BadRequestException('rank는 1부터 시작해야 합니다.');
+    }
+
+    // preferredSounds 업데이트
+    await this.userRepository.updatePreferredSoundsRank(
+      userID,
+      dto.preferredSounds,
+    );
+
+    return {
+      message: '선호 사운드 rank가 성공적으로 업데이트되었습니다.',
+      preferredSounds: dto.preferredSounds,
+    };
   }
 }

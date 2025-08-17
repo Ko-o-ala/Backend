@@ -47,4 +47,14 @@ export class UsersRepository {
       new: true,
     });
   }
+
+  async updatePreferredSoundsRank(
+    userID: string,
+    preferredSoundsRank: Array<{ filename: string; rank: number }>,
+  ) {
+    return await this.userModel.updateOne(
+      { userID },
+      { $set: { preferredSounds: preferredSoundsRank } },
+    );
+  }
 }

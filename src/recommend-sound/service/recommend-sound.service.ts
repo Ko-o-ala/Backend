@@ -1,11 +1,11 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { RecommendSound } from '../schema/recommend-sound.schema';
 import { User } from '../../users/users.schema';
-import { SleepData } from '../../sleep-data/schema/sleep-data.schema';
+
 import { ExecuteRecommendRequestDto } from '../dto/execute-recommend.request.dto';
 import { ExecuteRecommendResponseDto } from '../dto/execute-recommend.response.dto';
 
@@ -16,8 +16,8 @@ export class RecommendSoundService {
     private readonly recommendSoundModel: Model<RecommendSound>,
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
-    @InjectModel(SleepData.name)
-    private readonly sleepDataModel: Model<SleepData>,
+    @InjectConnection()
+    private readonly connection: Connection,
     private readonly httpService: HttpService,
   ) {}
 
@@ -54,53 +54,346 @@ export class RecommendSoundService {
         );
       }
 
-      // 날짜를 MongoDB Date 형식으로 변환
       const targetDate = new Date(date + 'T00:00:00.000+00:00');
 
-      // 생체 데이터 조회 (있는 경우와 없는 경우를 구분)
-      // TODO: 생체 데이터가 있는 경우 추가 로직 구현
-      await this.sleepDataModel.findOne({ userID, date: targetDate }).exec();
-
-      // 알고리즘 서버로 전송할 데이터 구성
-      // 날짜를 +00:00 형식으로 변환 (Z 대신)
       const dateString = targetDate.toISOString().replace('Z', '+00:00');
 
-      // 알고리즘 서버가 기대하는 필드 구조에 맞춰 survey 데이터 구성
-      const surveyData = {
-        ...user.survey,
-        preferenceBalance: user.survey.preferenceBalance || 0.5, // 기본값 설정
-        youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '', // 빈 문자열로 설정
-        // 필요한 경우 다른 필드들도 기본값으로 설정
-      };
+      // 생체 데이터 조회 (있는 경우와 없는 경우를 구분)
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
 
-      const algorithmRequestData = {
-        userID: userID,
-        date: dateString,
-        survey: surveyData,
-        // TODO: 생체 데이터가 있는 경우 추가 로직 구현
-        // 현재는 생체 데이터가 없는 경우만 처리
-      };
+      console.log('🔍 디버깅 로그:');
+      console.log('요청된 날짜:', date);
+      console.log('targetDate:', targetDate);
+      console.log('startOfDay:', startOfDay);
+      console.log('endOfDay:', endOfDay);
 
-      // 알고리즘 서버에 요청 전송
-      const response = await firstValueFrom(
-        this.httpService.post(
-          `${process.env.RECOMMEND_ALGORITHM_URL}/recommend`,
-          algorithmRequestData,
-          {
-            validateStatus: (status) => status < 500, // 422도 성공으로 처리
+      const currentAvgSleepData = await this.connection
+        .collection('avgSleepData')
+        .findOne({
+          userID,
+          date: {
+            $gte: startOfDay,
+            $lte: endOfDay,
           },
-        ),
-      );
+        });
 
-      console.log('알고리즘 서버 응답 상태:', response.status);
-      console.log(
-        '알고리즘 서버 응답 데이터:',
-        JSON.stringify(response.data, null, 2),
-      );
-      console.log(
-        '요청 데이터:',
-        JSON.stringify(algorithmRequestData, null, 2),
-      );
+      console.log('조회된 생체 데이터:', currentAvgSleepData);
+      console.log('생체 데이터 존재 여부:', !!currentAvgSleepData);
+
+      // 기존 추천 결과가 있는지 확인
+      const previousDate = new Date(targetDate);
+      previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+
+      const previousStartOfDay = new Date(previousDate);
+      previousStartOfDay.setUTCHours(0, 0, 0, 0);
+      const previousEndOfDay = new Date(previousDate);
+      previousEndOfDay.setUTCHours(23, 59, 59, 999);
+
+      console.log('🔍 날짜 계산 디버깅:');
+      console.log('요청된 날짜:', targetDate);
+      console.log('전날 계산:', previousDate);
+      console.log('전날 시작:', previousStartOfDay);
+      console.log('전날 끝:', previousEndOfDay);
+
+      const existingRecommendation = await this.recommendSoundModel
+        .findOne({
+          userId: userID,
+          date: {
+            $gte: new Date(
+              Date.UTC(
+                previousDate.getUTCFullYear(),
+                previousDate.getUTCMonth(),
+                previousDate.getUTCDate(),
+                0,
+                0,
+                0,
+                0,
+              ),
+            ),
+            $lt: new Date(
+              Date.UTC(
+                previousDate.getUTCFullYear(),
+                previousDate.getUTCMonth(),
+                previousDate.getUTCDate() + 1,
+                0,
+                0,
+                0,
+                0,
+              ),
+            ),
+          },
+        })
+        .exec();
+
+      console.log('🔍 추천 결과 조회 디버깅:');
+      console.log('조회 조건:', {
+        userId: userID,
+        date: {
+          $gte: previousStartOfDay,
+          $lte: previousEndOfDay,
+        },
+      });
+      console.log('조회된 추천 결과:', existingRecommendation);
+      console.log('추천 결과 존재 여부:', !!existingRecommendation);
+
+      let algorithmRequestData;
+      let response;
+
+      if (currentAvgSleepData) {
+        // 생체 데이터가 있는 경우
+        if (existingRecommendation) {
+          // 생체 데이터 + 기존 추천 결과가 있는 경우
+          // 전날 생체 데이터 조회
+          const previousDate = new Date(targetDate);
+          previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+
+          const previousStartOfDay = new Date(previousDate);
+          previousStartOfDay.setUTCHours(0, 0, 0, 0);
+          const previousEndOfDay = new Date(previousDate);
+          previousEndOfDay.setUTCHours(23, 59, 59, 999);
+
+          const previousAvgSleepData = await this.connection
+            .collection('avgSleepData')
+            .findOne({
+              userID,
+              date: {
+                $gte: new Date(
+                  Date.UTC(
+                    previousDate.getUTCFullYear(),
+                    previousDate.getUTCMonth(),
+                    previousDate.getUTCDate(),
+                    0,
+                    0,
+                    0,
+                    0,
+                  ),
+                ),
+                $lt: new Date(
+                  Date.UTC(
+                    previousDate.getUTCFullYear(),
+                    previousDate.getUTCMonth(),
+                    previousDate.getUTCDate() + 1,
+                    0,
+                    0,
+                    0,
+                    0,
+                  ),
+                ),
+              },
+            });
+
+          // 전날 추천 결과 조회
+          const previousRecommendation = await this.recommendSoundModel
+            .findOne({
+              userId: userID,
+              date: {
+                $gte: new Date(
+                  Date.UTC(
+                    previousDate.getUTCFullYear(),
+                    previousDate.getUTCMonth(),
+                    previousDate.getUTCDate(),
+                    0,
+                    0,
+                    0,
+                    0,
+                  ),
+                ),
+                $lt: new Date(
+                  Date.UTC(
+                    previousDate.getUTCFullYear(),
+                    previousDate.getUTCMonth(),
+                    previousDate.getUTCDate() + 1,
+                    0,
+                    0,
+                    0,
+                    0,
+                  ),
+                ),
+              },
+            })
+            .exec();
+
+          // 사용자의 preferredSounds 조회 (rank 1,2,3위)
+          const userPreferredSounds = user.preferredSounds || [];
+          const top3PreferredSounds = userPreferredSounds
+            .filter((sound) => sound.rank <= 3)
+            .sort((a, b) => a.rank - b.rank)
+            .map((sound) => sound.filename);
+
+          // 전날 추천 결과 조회 (rank 1,2,3위)
+          const top3PreviousRecommendations = previousRecommendation
+            ? previousRecommendation.recommended_sounds
+                .filter((sound) => sound.rank <= 3)
+                .sort((a, b) => a.rank - b.rank)
+                .map((sound) => sound.filename)
+            : [];
+
+          const surveyData = {
+            ...user.survey,
+            preferenceBalance: user.survey.preferenceBalance || 0.5,
+            youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
+          };
+
+          algorithmRequestData = {
+            userID: userID,
+            date: dateString,
+            sleepData: {
+              current: {
+                awakeRatio: currentAvgSleepData.ratio.awakeRatio,
+                deepSleepRatio: currentAvgSleepData.ratio.deepSleepRatio,
+                lightSleepRatio: currentAvgSleepData.ratio.lightSleepRatio,
+                remSleepRatio: currentAvgSleepData.ratio.remSleepRatio,
+                sleepScore: currentAvgSleepData.sleepScore,
+              },
+              previous: previousAvgSleepData
+                ? {
+                    awakeRatio: previousAvgSleepData.ratio.awakeRatio,
+                    deepSleepRatio: previousAvgSleepData.ratio.deepSleepRatio,
+                    lightSleepRatio: previousAvgSleepData.ratio.lightSleepRatio,
+                    remSleepRatio: previousAvgSleepData.ratio.remSleepRatio,
+                    sleepScore: previousAvgSleepData.sleepScore,
+                  }
+                : undefined,
+            },
+            sounds: {
+              preferredSounds: top3PreferredSounds,
+              previousRecommendations: top3PreviousRecommendations,
+            },
+            survey: surveyData,
+          };
+
+          console.log(
+            'API 호출: /recommend/combined (생체데이터 + 기존추천결과 있음)',
+          );
+          response = await firstValueFrom(
+            this.httpService.post(
+              `${process.env.RECOMMEND_ALGORITHM_URL}/recommend/combined`,
+              algorithmRequestData,
+              {
+                validateStatus: (status) => status < 500,
+              },
+            ),
+          );
+        } else {
+          // 생체 데이터만 있는 경우 (기존 추천 결과 없음)
+          // 전날 생체 데이터 조회 (optional)
+          const previousDate = new Date(targetDate);
+          previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+
+          const previousStartOfDay = new Date(previousDate);
+          previousStartOfDay.setUTCHours(0, 0, 0, 0);
+          const previousEndOfDay = new Date(previousDate);
+          previousEndOfDay.setUTCHours(23, 59, 59, 999);
+
+          const previousAvgSleepData = await this.connection
+            .collection('avgSleepData')
+            .findOne({
+              userID,
+              date: {
+                $gte: new Date(
+                  Date.UTC(
+                    previousDate.getUTCFullYear(),
+                    previousDate.getUTCMonth(),
+                    previousDate.getUTCDate(),
+                    0,
+                    0,
+                    0,
+                    0,
+                  ),
+                ),
+                $lt: new Date(
+                  Date.UTC(
+                    previousDate.getUTCFullYear(),
+                    previousDate.getUTCMonth(),
+                    previousDate.getUTCDate() + 1,
+                    0,
+                    0,
+                    0,
+                    0,
+                  ),
+                ),
+              },
+            });
+
+          const surveyData = {
+            ...user.survey,
+            preferenceBalance: user.survey.preferenceBalance || 0.5,
+            youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
+          };
+
+          algorithmRequestData = {
+            userID: userID,
+            date: dateString,
+            sleepData: {
+              current: {
+                awakeRatio: currentAvgSleepData.ratio.awakeRatio,
+                deepSleepRatio: currentAvgSleepData.ratio.deepSleepRatio,
+                lightSleepRatio: currentAvgSleepData.ratio.lightSleepRatio,
+                remSleepRatio: currentAvgSleepData.ratio.remSleepRatio,
+                sleepScore: currentAvgSleepData.sleepScore,
+              },
+              previous: previousAvgSleepData
+                ? {
+                    awakeRatio: previousAvgSleepData.ratio.awakeRatio,
+                    deepSleepRatio: previousAvgSleepData.ratio.deepSleepRatio,
+                    lightSleepRatio: previousAvgSleepData.ratio.lightSleepRatio,
+                    remSleepRatio: previousAvgSleepData.ratio.remSleepRatio,
+                    sleepScore: previousAvgSleepData.sleepScore,
+                  }
+                : undefined,
+            },
+            survey: surveyData,
+          };
+
+          console.log(
+            'API 호출: /recommend/combined/new (생체데이터만 있음, 기존추천결과 없음)',
+          );
+          response = await firstValueFrom(
+            this.httpService.post(
+              `${process.env.RECOMMEND_ALGORITHM_URL}/recommend/combined/new`,
+              algorithmRequestData,
+              {
+                validateStatus: (status) => status < 500,
+              },
+            ),
+          );
+        }
+      } else {
+        // 생체 데이터가 없는 경우
+        const surveyData = {
+          ...user.survey,
+          preferenceBalance: user.survey.preferenceBalance || 0.5,
+          youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
+        };
+
+        algorithmRequestData = {
+          userID: userID,
+          date: dateString,
+          survey: surveyData,
+        };
+
+        console.log('API 호출: /recommend (생체데이터 없음, 설문조사만)');
+        response = await firstValueFrom(
+          this.httpService.post(
+            `${process.env.RECOMMEND_ALGORITHM_URL}/recommend`,
+            algorithmRequestData,
+            {
+              validateStatus: (status) => status < 500,
+            },
+          ),
+        );
+      }
+
+      console.log('=== 알고리즘 서버 통신 로그 ===');
+      console.log('전송된 요청 데이터:');
+      console.log(JSON.stringify(algorithmRequestData, null, 2));
+      console.log('받은 응답 상태:', response.status);
+      console.log('받은 응답 데이터:');
+      console.log(JSON.stringify(response.data, null, 2));
+      console.log('================================');
 
       if (response.status !== 200) {
         console.error('알고리즘 서버 에러 응답:', response.data);
@@ -119,15 +412,12 @@ export class RecommendSoundService {
         }>;
       } = response.data;
 
-      // 추천 결과를 MongoDB에 저장
-      const recommendSound = new this.recommendSoundModel({
+      await this.connection.collection('recommendSounds').insertOne({
         userId: userID,
         date: targetDate,
         recommendation_text: recommendationResult.recommendation_text,
         recommended_sounds: recommendationResult.recommended_sounds,
       });
-
-      await recommendSound.save();
 
       return {
         message: '추천 알고리즘이 성공적으로 실행되었습니다.',

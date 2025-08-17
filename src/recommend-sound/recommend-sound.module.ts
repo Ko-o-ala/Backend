@@ -8,17 +8,12 @@ import {
   RecommendSoundSchema,
 } from './schema/recommend-sound.schema';
 import { User, UserSchema } from '../users/users.schema';
-import {
-  SleepData,
-  SleepDataSchema,
-} from '../sleep-data/schema/sleep-data.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: RecommendSound.name, schema: RecommendSoundSchema },
       { name: User.name, schema: UserSchema },
-      { name: SleepData.name, schema: SleepDataSchema },
     ]),
     HttpModule,
   ],

@@ -19,7 +19,7 @@ export class UserSurveyDto {
   @IsIn(['coolWhite', 'neutral', 'warmYellow', 'unknown'])
   lightColorTemperature: string;
 
-  // Q3
+  // Q3youtubeContentTypeOther
   @ApiProperty({
     example: 'other',
     description: 'noisePreference',

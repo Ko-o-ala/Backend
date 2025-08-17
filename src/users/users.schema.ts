@@ -65,6 +65,12 @@ export class User extends Document {
   @Prop({ type: Object })
   profile: Record<string, any>;
 
+  @Prop({ type: Array, default: [] })
+  preferredSounds: Array<{
+    filename: string;
+    rank: number;
+  }>;
+
   readonly readOnlyData: {
     id: string;
     userId: string;
@@ -72,6 +78,10 @@ export class User extends Document {
     birthdate: Date;
     gender: number;
     survey: object;
+    preferredSounds: Array<{
+      filename: string;
+      rank: number;
+    }>;
   };
 }
 

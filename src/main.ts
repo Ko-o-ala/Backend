@@ -7,7 +7,13 @@ import * as expressBasicAuth from 'express-basic-auth';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe()); // * 등록해야지 class validation이 원활하게 작동함.
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      // forbidNonWhitelisted: true, // 정의되지 않은 속성 허용
+    }),
+  ); // * 등록해야지 class validation이 원활하게 작동함.
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(
     ['/docs', '/docs-json'],
