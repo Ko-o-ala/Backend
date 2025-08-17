@@ -27,7 +27,7 @@ export class RecommendSoundController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '추천 알고리즘 실행',
+    summary: '[finish] 추천 알고리즘 실행',
     description:
       '사용자의 설문조사 데이터와 생체 데이터를 기반으로 추천 알고리즘을 실행합니다. / Authorization : Bearer + [token] 필요',
   })

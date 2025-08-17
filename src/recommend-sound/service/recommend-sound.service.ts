@@ -363,6 +363,61 @@ export class RecommendSoundService {
         }
       } else {
         // 생체 데이터가 없는 경우
+        // 전날 추천 결과 조회 (preferredSounds와 previousRecommendations 포함 가능)
+        const previousDate = new Date(targetDate);
+        previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+
+        const previousStartOfDay = new Date(previousDate);
+        previousStartOfDay.setUTCHours(0, 0, 0, 0);
+        const previousEndOfDay = new Date(previousDate);
+        previousEndOfDay.setUTCHours(23, 59, 59, 999);
+
+        // 전날 추천 결과 조회
+        const previousRecommendation = await this.recommendSoundModel
+          .findOne({
+            userId: userID,
+            date: {
+              $gte: new Date(
+                Date.UTC(
+                  previousDate.getUTCFullYear(),
+                  previousDate.getUTCMonth(),
+                  previousDate.getUTCDate(),
+                  0,
+                  0,
+                  0,
+                  0,
+                ),
+              ),
+              $lt: new Date(
+                Date.UTC(
+                  previousDate.getUTCFullYear(),
+                  previousDate.getUTCMonth(),
+                  previousDate.getUTCDate() + 1,
+                  0,
+                  0,
+                  0,
+                  0,
+                ),
+              ),
+            },
+          })
+          .exec();
+
+        // 사용자의 preferredSounds 조회 (rank 1,2,3위만)
+        const userPreferredSounds = user.preferredSounds || [];
+        const top3PreferredSounds = userPreferredSounds
+          .filter((sound) => sound.rank <= 3)
+          .sort((a, b) => a.rank - b.rank)
+          .map((sound) => sound.filename);
+
+        // 전날 추천 결과에서 rank 1,2,3위만 추출
+        const top3PreviousRecommendations = previousRecommendation
+          ? previousRecommendation.recommended_sounds
+              .filter((sound) => sound.rank <= 3)
+              .sort((a, b) => a.rank - b.rank)
+              .map((sound) => sound.filename)
+          : [];
+
         const surveyData = {
           ...user.survey,
           preferenceBalance: user.survey.preferenceBalance || 0.5,
@@ -373,9 +428,15 @@ export class RecommendSoundService {
           userID: userID,
           date: dateString,
           survey: surveyData,
+          sounds: {
+            preferredSounds: top3PreferredSounds,
+            previousRecommendations: top3PreviousRecommendations,
+          },
         };
 
-        console.log('API 호출: /recommend (생체데이터 없음, 설문조사만)');
+        console.log(
+          'API 호출: /recommend (생체데이터 없음, 설문조사 + 사운드 데이터)',
+        );
         response = await firstValueFrom(
           this.httpService.post(
             `${process.env.RECOMMEND_ALGORITHM_URL}/recommend`,
