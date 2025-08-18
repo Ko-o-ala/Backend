@@ -1,98 +1,97 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+## introduce
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+2025 한이음 드림업 <프로젝트 : AI 기반 개인 맞춤형 수면 유도 사운드 추천 플랫폼 및 수면 로봇 개발>의 매엔 백엔드 서버입니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## structure
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Sleep Robot   │    │   External      │
+│   (Mobile App)  │◄──►│   (Hardware)    │◄──►│   LLM Services  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Main Backend Server                         │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    App Module                            │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │   │
+│  │  │ Auth Module │ │Users Module │ │Recommend Sound  │   │   │
+│  │  │             │ │             │ │    Module       │   │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────────┘   │   │
+│  │  ┌─────────────────────────────────────────────────┐   │   │
+│  │  │              Sleep Data Module                  │   │   │
+│  │  └─────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   MongoDB       │    │   JWT Token     │    │   Swagger       │
+│   Database      │    │   Authentication│    │   Documentation │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## Compile and run the project
+## description
 
-```bash
-# development
-$ npm run start
+### **Auth Module** (`/auth`)
 
-# watch mode
-$ npm run start:dev
+- **역할**: 사용자 인증 및 JWT 토큰 관리
+- **주요 기능**: 로그인, JWT 토큰 발급 및 검증
+- **상호작용**:
+  - Frontend (Mobile App)와 JWT 토큰 기반 인증
+  - Users Module과 연동하여 사용자 정보 검증
+  - 모든 보호된 API 엔드포인트에 인증 제공
 
-# production mode
-$ npm run start:prod
-```
+### **Users Module** (`/users`)
 
-## Run tests
+- **역할**: 사용자 계정 관리 및 프로필 정보 처리
+- **주요 기능**: 회원가입, 로그인, 프로필 수정, 설문조사 데이터 관리, 선호 사운드 순위 관리
+- **상호작용**:
+  - Frontend (Mobile App)와 사용자 계정 관련 API 제공
+  - Auth Module과 연동하여 인증된 사용자 정보 관리
+  - Recommend Sound Module에 사용자 설문조사 데이터 제공
 
-```bash
-# unit tests
-$ npm run test
+### **Recommend Sound Module** (`/recommend-sound`)
 
-# e2e tests
-$ npm run test:e2e
+- **역할**: AI 기반 개인 맞춤형 수면 유도 사운드 추천
+- **주요 기능**: 추천 알고리즘 실행, 추천 결과 저장 및 조회
+- **상호작용**:
+  - Frontend (Mobile App)와 추천 결과 제공
+  - Users Module에서 사용자 설문조사 데이터 수집
+  - Sleep Data Module에서 생체 데이터 수집
+  - External AI Services와 연동하여 추천 알고리즘 실행
 
-# test coverage
-$ npm run test:cov
-```
+### **Sleep Data Module** (`/sleep-data`)
 
-## Deployment
+- **역할**: 사용자의 수면 생체 데이터 관리 및 분석
+- **주요 기능**: 수면 데이터 저장, 월별 평균 수면 데이터 조회, 특정 날짜 수면 데이터 조회
+- **상호작용**:
+  - Sleep Robot (Hardware)에서 생체 데이터 수신
+  - Frontend (Mobile App)에 수면 데이터 분석 결과 제공
+  - Recommend Sound Module에 생체 데이터 제공하여 추천 알고리즘에 활용
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### **Common Infrastructure**
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- **Middleware**: 로깅, CORS, 요청/응답 처리
+- **Guards**: JWT 인증, 내부 API 키 검증
+- **Interceptors**: 성공 응답 표준화
+- **Filters**: HTTP 예외 처리
+- **Validation**: DTO 기반 데이터 검증
+- **Swagger**: API 문서화 및 테스트 인터페이스
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+### **데이터 흐름**
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+1. **사용자 등록/로그인**: Frontend → Auth Module → Users Module → MongoDB
+2. **수면 데이터 수집**: Sleep Robot → Sleep Data Module → MongoDB
+3. **사운드 추천**: Frontend → Recommend Sound Module → AI Services → MongoDB
+4. **데이터 조회**: Frontend → 각 Module → MongoDB → Frontend
 
-## Resources
+### **외부 연동**
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **MongoDB**: 메인 데이터베이스
+- **External AI Services**: 추천 알고리즘 실행
+- **JWT**: 보안 인증
+- **Swagger**: API 문서화 및 테스트
