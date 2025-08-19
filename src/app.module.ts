@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RecommendSoundModule } from './recommend-sound/recommend-sound.module';
 import { SleepDataModule } from './sleep-data/sleep-data.module';
+import { LlmModule } from './llm/llm.module';
 import mongoose from 'mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -22,6 +23,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ScheduleModule.forRoot(),
     RecommendSoundModule,
     SleepDataModule,
+    LlmModule,
   ],
   controllers: [AppController],
   providers: [AppService],

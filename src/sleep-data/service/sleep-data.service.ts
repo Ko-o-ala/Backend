@@ -164,4 +164,16 @@ export class SleepDataService {
       avgTotalSleepDuration: item.avgTotalSleepDuration,
     }));
   }
+
+  /**
+   * 사용자 ID로 모든 수면 데이터를 가져옵니다.
+   */
+  async getAllSleepDataByUserID(userID: string) {
+    const data = await this.sleepModel
+      .find({ userID })
+      .sort({ date: -1 })
+      .lean();
+
+    return data;
+  }
 }
