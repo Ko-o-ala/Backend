@@ -473,12 +473,15 @@ export class RecommendSoundService {
         }>;
       } = response.data;
 
-      await this.connection.collection('recommendSounds').insertOne({
+      // Mongoose 모델을 사용하여 저장 (timestamps 자동 생성)
+      const newRecommendSound = new this.recommendSoundModel({
         userId: userID,
         date: targetDate,
         recommendation_text: recommendationResult.recommendation_text,
         recommended_sounds: recommendationResult.recommended_sounds,
       });
+
+      await newRecommendSound.save();
 
       return {
         message: '추천 알고리즘이 성공적으로 실행되었습니다.',
