@@ -552,7 +552,7 @@ export class RecommendSoundService {
         userId: recommendation.userId,
         date: date,
         recommendation_text: recommendation.recommendation_text,
-        recommended_sounds: recommendation.recommended_sounds.map(sound => ({
+        recommended_sounds: recommendation.recommended_sounds.map((sound) => ({
           filename: sound.filename,
           rank: sound.rank,
         })),

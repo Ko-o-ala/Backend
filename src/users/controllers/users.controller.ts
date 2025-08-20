@@ -35,6 +35,7 @@ import { UserSurveySuccessModifyResponseDto } from '../dto/user.survey.success.m
 import { UpdatePreferredSoundsRankDto } from '../dto/update-preferred-sounds-rank.dto';
 import { UpdatePreferredSoundsRankResponseDto } from '../dto/update-preferred-sounds-rank.response.dto';
 import { InternalApiKeyGuard } from 'src/common/guards/internal-api-key.guard';
+import { CreateHardwareDto, HardwareResponseDto } from '../dto/hardware.dto';
 
 @Controller('users')
 @UseInterceptors(SuccessInterceptor)
@@ -178,5 +179,39 @@ export class UsersController {
     @Body() dto: UpdatePreferredSoundsRankDto,
   ) {
     return await this.userService.updatePreferredSoundsRank(user.userID, dto);
+  }
+
+  @ApiSuccessResponse(HardwareResponseDto, 201)
+  @UseGuards(JwtAuthGuard)
+  @Post('create/hardware')
+  @ApiOperation({
+    summary: '[finish] 하드웨어 LED 색상 설정 저장',
+    description:
+      'Authorization : Bearer + [token] 필요 / RGB 색상값을 hex 형식으로 저장',
+  })
+  async createHardware(
+    @CurrentUser() user: User,
+    @Body() createHardwareDto: CreateHardwareDto,
+  ): Promise<any> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    return await (this.userService as any).createHardware(
+      user.userID,
+      createHardwareDto,
+    );
+  }
+
+  @ApiSuccessResponse(HardwareResponseDto)
+  @UseGuards(JwtAuthGuard)
+  @Get('get/hardware')
+  @ApiOperation({
+    summary: '[finish] 하드웨어 LED 색상 설정 조회',
+    description:
+      'Authorization : Bearer + [token] 필요 / 사용자가 설정한 LED 색상값 조회',
+  })
+  async getHardware(
+    @CurrentUser() user: User,
+  ): Promise<{ userID: string; isHardware: boolean; RGB: string }> {
+    // eslint-disable-next-line
+    return await (this.userService as any).getHardware(user.userID);
   }
 }

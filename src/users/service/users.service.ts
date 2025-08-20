@@ -8,6 +8,7 @@ import { UserModifySurveyDto } from '../dto/user.modify.survey.dto';
 import { UpdatePreferredSoundsRankDto } from '../dto/update-preferred-sounds-rank.dto';
 import { AuthService } from '../../auth/auth.service';
 import { User } from '../users.schema';
+import { CreateHardwareDto } from '../dto/hardware.dto';
 
 @Injectable()
 export class UsersService {
@@ -156,6 +157,53 @@ export class UsersService {
     return {
       message: '선호 사운드 rank가 성공적으로 업데이트되었습니다.',
       preferredSounds: dto.preferredSounds,
+    };
+  }
+
+  async createHardware(
+    userID: string,
+    createHardwareDto: CreateHardwareDto,
+  ): Promise<{
+    message: string;
+    hardware: { isHardware: boolean; RGB: string };
+  }> {
+    const user = await this.userRepository.findByUserID(userID);
+
+    if (!user) {
+      throw new HttpException('유저를 찾을 수 없습니다.', 404);
+    }
+
+    const hardware = {
+      isHardware: true,
+      RGB: createHardwareDto.RGB,
+    };
+
+    await this.userRepository.updateHardware(userID, hardware);
+
+    return {
+      message: '하드웨어 LED 설정이 성공적으로 저장되었습니다.',
+      hardware,
+    };
+  }
+
+  async getHardware(
+    userID: string,
+  ): Promise<{ userID: string; isHardware: boolean; RGB: string }> {
+    const user = await this.userRepository.findByUserID(userID);
+
+    if (!user) {
+      throw new HttpException('유저를 찾을 수 없습니다.', 404);
+    }
+
+    const hardware = await this.userRepository.getHardware(userID);
+
+    if (!hardware) {
+      throw new HttpException('하드웨어 설정이 없습니다.', 404);
+    }
+
+    return {
+      userID,
+      ...hardware,
     };
   }
 }

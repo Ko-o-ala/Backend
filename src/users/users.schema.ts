@@ -71,6 +71,17 @@ export class User extends Document {
     rank: number;
   }>;
 
+  @ApiProperty({
+    example: { isHardware: true, RGB: '#FF0000' },
+    description: '하드웨어 LED 설정 (옵셔널)',
+    required: false,
+  })
+  @Prop({ type: Object })
+  hardware?: {
+    isHardware: boolean;
+    RGB: string;
+  };
+
   readonly readOnlyData: {
     id: string;
     userId: string;
@@ -82,6 +93,10 @@ export class User extends Document {
       filename: string;
       rank: number;
     }>;
+    hardware?: {
+      isHardware: boolean;
+      RGB: string;
+    };
   };
 }
 

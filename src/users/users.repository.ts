@@ -57,4 +57,16 @@ export class UsersRepository {
       { $set: { preferredSounds: preferredSoundsRank } },
     );
   }
+
+  async updateHardware(
+    userID: string,
+    hardware: { isHardware: boolean; RGB: string },
+  ) {
+    return await this.userModel.updateOne({ userID }, { $set: { hardware } });
+  }
+
+  async getHardware(userID: string) {
+    const user = await this.userModel.findOne({ userID }).select('hardware');
+    return user?.hardware || null;
+  }
 }

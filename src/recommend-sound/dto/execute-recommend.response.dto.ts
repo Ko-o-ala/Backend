@@ -55,7 +55,6 @@ export class ExecuteRecommendResponseDto {
               example: 1,
               description: '추천 순위',
             },
-
           },
         },
         description: '추천된 사운드 목록',
