@@ -124,6 +124,20 @@ export class LlmService {
   }
 
   /**
+   * 사용자의 가장 최근 추천 결과를 가져옵니다.
+   */
+  async getUserMostRecentRecommendResult(userID: string) {
+    try {
+      return await this.recommendSoundService.getMostRecentRecommendResult(
+        userID,
+      );
+    } catch (error) {
+      console.error('최근 추천 결과 조회 중 오류:', error);
+      return [];
+    }
+  }
+
+  /**
    * 사용자의 모든 데이터를 통합하여 가져옵니다.
    */
   async getUserAllData(userID: string): Promise<{
@@ -131,40 +145,46 @@ export class LlmService {
     message: string;
     biometricData: any;
     surveyData: any;
-    recommendSoundData: any;
+    recentResult: any;
     totalCount: {
       biometricDataCount: number;
       hasSurveyData: boolean;
-      hasRecommendSoundData: boolean;
+      hasRecentResult: boolean;
     };
   }> {
     try {
       // 생체 데이터 조회
-      const biometricData = await this.getUserBiometricData(userID);
+      const biometricDataRaw = await this.getUserBiometricData(userID);
+
+      // biometricData의 data 필드를 sleepData로 변경
+      const biometricData = {
+        ...biometricDataRaw,
+        sleepData: biometricDataRaw.data,
+        data: undefined, // 기존 data 필드 제거
+      };
+      delete biometricData.data;
 
       // 설문조사 데이터 조회
       const surveyData = await this.getUserSurveyData(userID);
 
-      // 오늘 날짜의 사운드 추천 결과 조회
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
-      const recommendSoundData = await this.getUserRecommendSoundData(
-        userID,
-        today,
-      );
+      // 가장 최근 추천 결과 조회
+      const recentResult = await this.getUserMostRecentRecommendResult(userID);
 
       return {
         userID,
         message: '사용자 데이터를 성공적으로 가져왔습니다.',
         biometricData,
         surveyData,
-        recommendSoundData,
+        recentResult,
         totalCount: {
           biometricDataCount: biometricData.totalCount || 0,
           hasSurveyData: !!surveyData,
-          hasRecommendSoundData: !!recommendSoundData,
+          hasRecentResult: Array.isArray(recentResult)
+            ? recentResult.length > 0
+            : !!recentResult,
         },
       };
-    } catch (error) {
+    } catch {
       throw new NotFoundException(
         '사용자 데이터를 가져오는 중 오류가 발생했습니다.',
       );

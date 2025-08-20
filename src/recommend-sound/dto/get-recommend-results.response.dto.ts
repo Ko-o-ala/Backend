@@ -38,4 +38,16 @@ export class GetRecommendResultsResponseDto {
     type: [RecommendedSoundResult],
   })
   recommended_sounds: RecommendedSoundResult[];
+
+  @ApiProperty({
+    description: '생성 시간',
+    example: '2025-08-13T16:01:21.500Z',
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    description: '수정 시간',
+    example: '2025-08-13T16:01:21.500Z',
+  })
+  updatedAt: Date;
 }

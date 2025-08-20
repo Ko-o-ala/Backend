@@ -23,6 +23,12 @@ export class RecommendSound extends Document {
 
   @Prop({ type: [RecommendedSound], required: true })
   recommended_sounds: RecommendedSound[];
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const RecommendSoundSchema =

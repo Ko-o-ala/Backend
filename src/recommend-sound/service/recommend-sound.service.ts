@@ -532,16 +532,27 @@ export class RecommendSoundService {
       const nextDate = new Date(targetDate);
       nextDate.setUTCDate(nextDate.getUTCDate() + 1);
 
-      // 해당 날짜의 추천 결과 조회
-      const recommendation = await this.recommendSoundModel
-        .findOne({
+      // 해당 날짜의 모든 추천 결과 조회 후 가장 최신 데이터 선택
+      const recommendations = await this.recommendSoundModel
+        .find({
           userId: userID,
           date: {
             $gte: targetDate,
             $lt: nextDate,
           },
         })
+        .sort({ createdAt: -1, updatedAt: -1 }) // createdAt과 updatedAt 모두 내림차순 정렬
         .exec();
+
+      if (!recommendations || recommendations.length === 0) {
+        throw new HttpException(
+          '해당 날짜의 추천 결과를 찾을 수 없습니다.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // 가장 최신 데이터 선택 (createdAt과 updatedAt이 가장 늦은 것)
+      const recommendation = recommendations[0];
 
       if (!recommendation) {
         throw new HttpException(
@@ -550,7 +561,7 @@ export class RecommendSoundService {
         );
       }
 
-      // 응답 데이터 구성 (createdAt, updatedAt, __v 제외)
+      // 응답 데이터 구성 (createdAt, updatedAt 포함)
       return {
         userId: recommendation.userId,
         date: date,
@@ -559,6 +570,8 @@ export class RecommendSoundService {
           filename: sound.filename,
           rank: sound.rank,
         })),
+        createdAt: recommendation.createdAt,
+        updatedAt: recommendation.updatedAt,
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -569,6 +582,35 @@ export class RecommendSoundService {
         '추천 결과 조회 중 오류가 발생했습니다.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  /**
+   * 사용자의 가장 최근 추천 결과를 가져옵니다.
+   */
+  async getMostRecentRecommendResult(userID: string) {
+    try {
+      // 해당 사용자의 가장 최근 추천 결과 조회
+      const mostRecentRecommendation = await this.recommendSoundModel
+        .findOne({ userId: userID })
+        .sort({ createdAt: -1, updatedAt: -1 }) // createdAt과 updatedAt 모두 내림차순 정렬
+        .exec();
+
+      if (!mostRecentRecommendation) {
+        return [];
+      }
+
+      return {
+        userId: mostRecentRecommendation.userId,
+        date: mostRecentRecommendation.date.toISOString().split('T')[0], // YYYY-MM-DD 형식
+        recommendation_text: mostRecentRecommendation.recommendation_text,
+        recommended_sounds: mostRecentRecommendation.recommended_sounds,
+        createdAt: mostRecentRecommendation.createdAt,
+        updatedAt: mostRecentRecommendation.updatedAt,
+      };
+    } catch (error) {
+      console.error('최근 추천 결과 조회 중 오류:', error);
+      return [];
     }
   }
 }
