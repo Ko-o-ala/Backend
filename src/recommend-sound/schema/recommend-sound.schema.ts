@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { getMongoDBKSTTime } from '../../common/utils/date.util';
 
 @Schema({ _id: false })
 export class RecommendedSound {
@@ -10,7 +11,7 @@ export class RecommendedSound {
   rank: number;
 }
 
-@Schema({ timestamps: true, collection: 'recommendSounds' })
+@Schema({ collection: 'recommendSounds' })
 export class RecommendSound extends Document {
   @Prop({ required: true })
   userId: string;
@@ -33,3 +34,13 @@ export class RecommendSound extends Document {
 
 export const RecommendSoundSchema =
   SchemaFactory.createForClass(RecommendSound);
+
+// 한국 시간대 설정을 위한 pre-save 미들웨어
+RecommendSoundSchema.pre('save', function (next) {
+  const now = getMongoDBKSTTime();
+  if (this.isNew) {
+    this.createdAt = now;
+  }
+  this.updatedAt = now;
+  next();
+});

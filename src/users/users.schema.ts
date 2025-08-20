@@ -3,10 +3,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 import { Document, SchemaOptions } from 'mongoose';
 import { Survey } from './types/survey.type';
+import { getMongoDBKSTTime } from '../common/utils/date.util';
 
-const options: SchemaOptions = {
-  timestamps: true,
-};
+const options: SchemaOptions = {};
 
 @Schema(options)
 export class User extends Document {
@@ -82,6 +81,12 @@ export class User extends Document {
     RGB: string;
   };
 
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
+
   readonly readOnlyData: {
     id: string;
     userId: string;
@@ -101,6 +106,16 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// 한국 시간대 설정을 위한 pre-save 미들웨어
+UserSchema.pre('save', function (next) {
+  const now = getMongoDBKSTTime();
+  if (this.isNew) {
+    this.createdAt = now;
+  }
+  this.updatedAt = now;
+  next();
+});
 
 UserSchema.virtual('readOnlyData').get(function (this: User) {
   return {

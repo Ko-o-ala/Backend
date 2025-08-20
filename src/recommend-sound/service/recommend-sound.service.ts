@@ -1,14 +1,19 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { Model, Connection } from 'mongoose';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { RecommendSound } from '../schema/recommend-sound.schema';
 import { User } from '../../users/users.schema';
-
+import { Connection } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
 import { ExecuteRecommendRequestDto } from '../dto/execute-recommend.request.dto';
-import { ExecuteRecommendResponseDto } from '../dto/execute-recommend.response.dto';
 import { GetRecommendResultsResponseDto } from '../dto/get-recommend-results.response.dto';
+import {
+  parseDateToKST,
+  getKSTDayBoundaries,
+  getKSTPreviousDayBoundaries,
+} from '../../common/utils/date.util';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class RecommendSoundService {
@@ -24,7 +29,7 @@ export class RecommendSoundService {
 
   async executeRecommend(
     executeRecommendDto: ExecuteRecommendRequestDto,
-  ): Promise<ExecuteRecommendResponseDto> {
+  ): Promise<any> {
     try {
       const { userID, date } = executeRecommendDto;
 
@@ -55,15 +60,9 @@ export class RecommendSoundService {
         );
       }
 
-      const targetDate = new Date(date + 'T00:00:00.000+00:00');
-
-      const dateString = targetDate.toISOString().replace('Z', '+00:00');
-
-      // 생체 데이터 조회 (있는 경우와 없는 경우를 구분)
-      const startOfDay = new Date(targetDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      // 한국 시간대 기준으로 날짜 처리
+      const targetDate = parseDateToKST(date);
+      const { startOfDay, endOfDay } = getKSTDayBoundaries(targetDate);
 
       console.log('🔍 디버깅 로그:');
       console.log('요청된 날짜:', date);
@@ -84,18 +83,12 @@ export class RecommendSoundService {
       console.log('조회된 생체 데이터:', currentAvgSleepData);
       console.log('생체 데이터 존재 여부:', !!currentAvgSleepData);
 
-      // 기존 추천 결과가 있는지 확인
-      const previousDate = new Date(targetDate);
-      previousDate.setUTCDate(previousDate.getUTCDate() - 1);
-
-      const previousStartOfDay = new Date(previousDate);
-      previousStartOfDay.setUTCHours(0, 0, 0, 0);
-      const previousEndOfDay = new Date(previousDate);
-      previousEndOfDay.setUTCHours(23, 59, 59, 999);
+      // 기존 추천 결과가 있는지 확인 (한국 시간대 기준)
+      const { startOfDay: previousStartOfDay, endOfDay: previousEndOfDay } =
+        getKSTPreviousDayBoundaries(targetDate);
 
       console.log('🔍 날짜 계산 디버깅:');
       console.log('요청된 날짜:', targetDate);
-      console.log('전날 계산:', previousDate);
       console.log('전날 시작:', previousStartOfDay);
       console.log('전날 끝:', previousEndOfDay);
 
@@ -103,28 +96,8 @@ export class RecommendSoundService {
         .findOne({
           userId: userID,
           date: {
-            $gte: new Date(
-              Date.UTC(
-                previousDate.getUTCFullYear(),
-                previousDate.getUTCMonth(),
-                previousDate.getUTCDate(),
-                0,
-                0,
-                0,
-                0,
-              ),
-            ),
-            $lt: new Date(
-              Date.UTC(
-                previousDate.getUTCFullYear(),
-                previousDate.getUTCMonth(),
-                previousDate.getUTCDate() + 1,
-                0,
-                0,
-                0,
-                0,
-              ),
-            ),
+            $gte: previousStartOfDay,
+            $lt: previousEndOfDay,
           },
         })
         .exec();
@@ -186,33 +159,13 @@ export class RecommendSoundService {
               },
             });
 
-          // 전날 추천 결과 조회
+          // 전날 추천 결과 조회 (한국 시간대 기준)
           const previousRecommendation = await this.recommendSoundModel
             .findOne({
               userId: userID,
               date: {
-                $gte: new Date(
-                  Date.UTC(
-                    previousDate.getUTCFullYear(),
-                    previousDate.getUTCMonth(),
-                    previousDate.getUTCDate(),
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                ),
-                $lt: new Date(
-                  Date.UTC(
-                    previousDate.getUTCFullYear(),
-                    previousDate.getUTCMonth(),
-                    previousDate.getUTCDate() + 1,
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                ),
+                $gte: previousStartOfDay,
+                $lt: previousEndOfDay,
               },
             })
             .exec();
@@ -240,7 +193,7 @@ export class RecommendSoundService {
 
           algorithmRequestData = {
             userID: userID,
-            date: dateString,
+            date: date,
             sleepData: {
               current: {
                 awakeRatio: currentAvgSleepData.ratio.awakeRatio,
@@ -327,7 +280,7 @@ export class RecommendSoundService {
 
           algorithmRequestData = {
             userID: userID,
-            date: dateString,
+            date: date,
             sleepData: {
               current: {
                 awakeRatio: currentAvgSleepData.ratio.awakeRatio,
@@ -373,33 +326,13 @@ export class RecommendSoundService {
         const previousEndOfDay = new Date(previousDate);
         previousEndOfDay.setUTCHours(23, 59, 59, 999);
 
-        // 전날 추천 결과 조회
+        // 전날 추천 결과 조회 (한국 시간대 기준)
         const previousRecommendation = await this.recommendSoundModel
           .findOne({
             userId: userID,
             date: {
-              $gte: new Date(
-                Date.UTC(
-                  previousDate.getUTCFullYear(),
-                  previousDate.getUTCMonth(),
-                  previousDate.getUTCDate(),
-                  0,
-                  0,
-                  0,
-                  0,
-                ),
-              ),
-              $lt: new Date(
-                Date.UTC(
-                  previousDate.getUTCFullYear(),
-                  previousDate.getUTCMonth(),
-                  previousDate.getUTCDate() + 1,
-                  0,
-                  0,
-                  0,
-                  0,
-                ),
-              ),
+              $gte: previousStartOfDay,
+              $lt: previousEndOfDay,
             },
           })
           .exec();
@@ -427,7 +360,7 @@ export class RecommendSoundService {
 
         algorithmRequestData = {
           userID: userID,
-          date: dateString,
+          date: date,
           survey: surveyData,
           sounds: {
             preferredSounds: top3PreferredSounds,
@@ -527,10 +460,10 @@ export class RecommendSoundService {
         );
       }
 
-      // 날짜를 Date 객체로 변환 (UTC 기준)
-      const targetDate = new Date(date + 'T00:00:00.000Z');
+      // 한국 시간대 기준으로 날짜 처리
+      const targetDate = parseDateToKST(date);
       const nextDate = new Date(targetDate);
-      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      nextDate.setDate(nextDate.getDate() + 1);
 
       // 해당 날짜의 모든 추천 결과 조회 후 가장 최신 데이터 선택
       const recommendations = await this.recommendSoundModel

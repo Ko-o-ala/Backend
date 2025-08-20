@@ -6,6 +6,9 @@ import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import * as expressBasicAuth from 'express-basic-auth';
 
 async function bootstrap() {
+  // 한국 시간대 설정 (KST, UTC+9)
+  process.env.TZ = 'Asia/Seoul';
+
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(

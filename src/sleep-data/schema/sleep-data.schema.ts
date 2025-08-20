@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { getMongoDBKSTTime } from '../../common/utils/date.util';
 
 @Schema({ _id: false })
 export class SleepTime {
@@ -40,7 +41,7 @@ export class Segment {
   stage: string;
 }
 
-@Schema({ timestamps: true })
+@Schema({ collection: 'sleepdatas' })
 export class SleepData extends Document {
   @Prop({ required: true })
   userID: string;
@@ -59,6 +60,22 @@ export class SleepData extends Document {
 
   @Prop({ required: true })
   sleepScore: number;
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const SleepDataSchema = SchemaFactory.createForClass(SleepData);
+
+// 한국 시간대 설정을 위한 pre-save 미들웨어
+SleepDataSchema.pre('save', function (next) {
+  const now = getMongoDBKSTTime();
+  if (this.isNew) {
+    this.createdAt = now;
+  }
+  this.updatedAt = now;
+  next();
+});

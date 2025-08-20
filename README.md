@@ -2,6 +2,33 @@
 
 2025 한이음 드림업 <프로젝트 : AI 기반 개인 맞춤형 수면 유도 사운드 추천 플랫폼 및 수면 로봇 개발>의 매엔 백엔드 서버입니다.
 
+## ⚠️ 시간대 설정 주의사항
+
+**중요**: 이 프로젝트는 한국 시간대(KST, UTC+9)로 설정되어 있습니다.
+
+### 시간대 설정이 적용된 부분:
+
+- **MongoDB 스키마**: `createdAt`, `updatedAt` 필드가 한국 시간으로 저장됨 (pre-save 미들웨어 사용)
+- **Date 객체 생성**: 모든 날짜 처리가 한국 시간대 기준으로 동작
+- **서버 실행**: `TZ=Asia/Seoul` 환경변수로 실행됨
+- **시간대 계산**: UTC+9 오프셋을 사용한 정확한 한국 시간대 처리
+
+### 시간대 관련 유틸리티 함수:
+
+- `src/common/utils/date.util.ts`에 한국 시간대 처리 함수들이 포함됨
+- `parseDateToKST()`, `getKSTDayBoundaries()`, `getMongoDBKSTTime()` 등 사용 가능
+- **중요**: MongoDB 저장 시 `getMongoDBKSTTime()` 함수를 사용하여 정확한 한국 시간 저장
+
+### 실행 시 주의사항:
+
+```bash
+# 개발 모드 실행 (한국 시간대 자동 설정)
+npm run start:dev
+
+# 프로덕션 모드 실행 (한국 시간대 자동 설정)
+npm run start:prod
+```
+
 ## structure
 
 ```
