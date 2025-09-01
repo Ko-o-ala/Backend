@@ -10,7 +10,6 @@ import { MonthAvgSleepData } from '../schema/month-avg-sleep-data.schema';
 import { CreateSleepDataDto } from '../dto/sleep-data.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as dayjs from 'dayjs';
-import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class SleepDataService {
@@ -19,19 +18,6 @@ export class SleepDataService {
     @InjectModel(MonthAvgSleepData.name)
     private readonly monthAvgModel: Model<MonthAvgSleepData>,
   ) {}
-
-  @Cron('0 15 * * *') // 매일 오후 3시 (서버 시간 기준)
-  async autoCleanup() {
-    const thresholdDate = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
-
-    const result = await this.sleepModel.deleteMany({
-      date: { $lt: thresholdDate },
-    });
-
-    console.log(
-      `[AUTO CLEANUP] Deleted ${result.deletedCount} entries older than 30 days`,
-    );
-  }
 
   async getSleepDataByDate(userID: string, date: string) {
     const targetDate = dayjs(date);
@@ -115,10 +101,9 @@ export class SleepDataService {
   async saveSleepData(dto: CreateSleepDataDto) {
     const { userID, date, sleepTime, Duration, segments, sleepScore } = dto;
 
-    // 문자열 date를 Date 객체로 변환
     const dateObject = new Date(date);
 
-    // 중복 저장 방지: userID + date + startTime 기준
+    // 중복 저장 방지: 같은 userID + 같은 date + 같은 startTime인 경우만 중복으로 처리
     const exists = await this.sleepModel.findOne({
       userID,
       date: dateObject,
@@ -127,7 +112,7 @@ export class SleepDataService {
 
     if (exists) {
       throw new ConflictException(
-        '이미 시작 시간이 같은 동일한 수면 데이터가 존재합니다.',
+        '해당 사용자의 같은 날짜에 이미 시작 시간이 같은 수면 데이터가 존재합니다.',
       );
     }
 
@@ -165,9 +150,7 @@ export class SleepDataService {
     }));
   }
 
-  /**
-   * 사용자 ID로 모든 수면 데이터를 가져옵니다.
-   */
+  // 사용자 ID로 모든 수면 데이터를 가져옴.
   async getAllSleepDataByUserID(userID: string) {
     const data = await this.sleepModel
       .find({ userID })
