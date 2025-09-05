@@ -189,6 +189,10 @@ export class RecommendSoundService {
             ...user.survey,
             preferenceBalance: user.survey.preferenceBalance || 0.5,
             youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
+            noisePreferenceOther: user.survey.noisePreferenceOther || '',
+            emotionalSleepInterferenceOther:
+              user.survey.emotionalSleepInterferenceOther || '',
+            calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
           };
 
           algorithmRequestData = {
@@ -276,6 +280,10 @@ export class RecommendSoundService {
             ...user.survey,
             preferenceBalance: user.survey.preferenceBalance || 0.5,
             youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
+            noisePreferenceOther: user.survey.noisePreferenceOther || '',
+            emotionalSleepInterferenceOther:
+              user.survey.emotionalSleepInterferenceOther || '',
+            calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
           };
 
           algorithmRequestData = {
@@ -356,6 +364,10 @@ export class RecommendSoundService {
           ...user.survey,
           preferenceBalance: user.survey.preferenceBalance || 0.5,
           youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
+          noisePreferenceOther: user.survey.noisePreferenceOther || '',
+          emotionalSleepInterferenceOther:
+            user.survey.emotionalSleepInterferenceOther || '',
+          calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
         };
 
         algorithmRequestData = {
