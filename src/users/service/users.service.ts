@@ -9,6 +9,7 @@ import { UpdatePreferredSoundsRankDto } from '../dto/update-preferred-sounds-ran
 import { AuthService } from '../../auth/auth.service';
 import { User } from '../users.schema';
 import { CreateHardwareDto } from '../dto/hardware.dto';
+import { Survey } from '../types/survey.type';
 
 @Injectable()
 export class UsersService {
@@ -35,7 +36,7 @@ export class UsersService {
       throw new BadRequestException('설문조사가 없습니다.');
     }
 
-    const updatedSurvey = { ...user.survey, ...dto };
+    const updatedSurvey = { ...user.survey, ...dto } as Survey;
     await this.userRepository.updateSurvey(userID, updatedSurvey);
 
     return { message: '설문조사가 성공적으로 수정되었습니다.' };
@@ -48,7 +49,7 @@ export class UsersService {
       throw new HttpException('유저를 찾을 수 없습니다.', 404);
     }
 
-    user.survey = surveyData;
+    user.survey = surveyData as Survey;
     await user.save();
 
     return { message: '설문조사가 성공적으로 저장되었습니다.' };

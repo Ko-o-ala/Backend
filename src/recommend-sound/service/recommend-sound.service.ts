@@ -14,6 +14,15 @@ import {
 } from '../../common/utils/date.util';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { Survey } from '../../users/types/survey.type';
+import {
+  AlgorithmRequestData,
+  AlgorithmResponse,
+  AvgSleepData,
+  PreviousRecommendation,
+  SleepDataRatio,
+  SoundData,
+} from '../types/algorithm-request.types';
 
 @Injectable()
 export class RecommendSoundService {
@@ -26,6 +35,162 @@ export class RecommendSoundService {
     private readonly connection: Connection,
     private readonly httpService: HttpService,
   ) {}
+
+  /**
+   * 사용자의 설문조사 데이터를 정리하여 반환합니다.
+   */
+  private prepareSurveyData(user: User): Survey {
+    return {
+      ...user.survey,
+      preferenceBalance: user.survey.preferenceBalance || 0.5,
+      noisePreferenceOther: user.survey.noisePreferenceOther || '',
+      emotionalSleepInterferenceOther:
+        user.survey.emotionalSleepInterferenceOther || '',
+      calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
+    };
+  }
+
+  /**
+   * 전날의 생체 데이터를 조회합니다.
+   */
+  private async getPreviousSleepData(
+    userID: string,
+    targetDate: Date,
+  ): Promise<AvgSleepData | null> {
+    const previousDate = new Date(targetDate);
+    previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+
+    const previousStartOfDay = new Date(previousDate);
+    previousStartOfDay.setUTCHours(0, 0, 0, 0);
+    const previousEndOfDay = new Date(previousDate);
+    previousEndOfDay.setUTCHours(23, 59, 59, 999);
+
+    return (await this.connection.collection('avgSleepData').findOne({
+      userID,
+      date: {
+        $gte: new Date(
+          Date.UTC(
+            previousDate.getUTCFullYear(),
+            previousDate.getUTCMonth(),
+            previousDate.getUTCDate(),
+            0,
+            0,
+            0,
+            0,
+          ),
+        ),
+        $lt: new Date(
+          Date.UTC(
+            previousDate.getUTCFullYear(),
+            previousDate.getUTCMonth(),
+            previousDate.getUTCDate() + 1,
+            0,
+            0,
+            0,
+            0,
+          ),
+        ),
+      },
+    })) as AvgSleepData | null;
+  }
+
+  /**
+   * 전날의 추천 결과를 조회합니다.
+   */
+  private async getPreviousRecommendation(
+    userID: string,
+    targetDate: Date,
+  ): Promise<PreviousRecommendation | null> {
+    const { startOfDay: previousStartOfDay, endOfDay: previousEndOfDay } =
+      getKSTPreviousDayBoundaries(targetDate);
+
+    return (await this.recommendSoundModel
+      .findOne({
+        userId: userID,
+        date: {
+          $gte: previousStartOfDay,
+          $lt: previousEndOfDay,
+        },
+      })
+      .exec()) as PreviousRecommendation | null;
+  }
+
+  /**
+   * 사용자의 선호 사운드와 전날 추천 결과에서 상위 3개를 추출합니다.
+   */
+  private prepareSoundData(
+    user: User,
+    previousRecommendation: PreviousRecommendation | null,
+  ): SoundData {
+    // 사용자의 preferredSounds 조회 (rank 1,2,3위)
+    const userPreferredSounds = user.preferredSounds || [];
+    const top3PreferredSounds = userPreferredSounds
+      .filter((sound) => sound.rank <= 3)
+      .sort((a, b) => a.rank - b.rank)
+      .map((sound) => sound.filename);
+
+    // 전날 추천 결과에서 rank 1,2,3위만 추출
+    const top3PreviousRecommendations = previousRecommendation
+      ? previousRecommendation.recommended_sounds
+          .filter((sound) => sound.rank <= 3)
+          .sort((a, b) => a.rank - b.rank)
+          .map((sound) => sound.filename)
+      : [];
+
+    return {
+      preferredSounds: top3PreferredSounds,
+      previousRecommendations: top3PreviousRecommendations,
+    };
+  }
+
+  /**
+   * 생체 데이터를 SleepDataRatio 형태로 변환합니다.
+   */
+  private convertToSleepDataRatio(avgSleepData: AvgSleepData): SleepDataRatio {
+    return {
+      awakeRatio: avgSleepData.ratio.awakeRatio,
+      deepSleepRatio: avgSleepData.ratio.deepSleepRatio,
+      lightSleepRatio: avgSleepData.ratio.lightSleepRatio,
+      remSleepRatio: avgSleepData.ratio.remSleepRatio,
+      sleepScore: avgSleepData.sleepScore,
+    };
+  }
+
+  /**
+   * 알고리즘 서버에 요청을 보내고 응답을 받습니다.
+   */
+  private async callAlgorithmAPI(
+    endpoint: string,
+    requestData: AlgorithmRequestData,
+  ): Promise<AlgorithmResponse> {
+    const response = await firstValueFrom(
+      this.httpService.post(
+        `${process.env.RECOMMEND_ALGORITHM_URL}${endpoint}`,
+        requestData,
+        {
+          validateStatus: (status) => status < 500,
+        },
+      ),
+    );
+
+    console.log('=== 알고리즘 서버 통신 로그 ===');
+    console.log('전송된 요청 데이터:');
+    console.log(JSON.stringify(requestData, null, 2));
+    console.log('받은 응답 상태:', response.status);
+    console.log('받은 응답 데이터:');
+    console.log(JSON.stringify(response.data, null, 2));
+    console.log('================================');
+
+    if (response.status !== 200) {
+      console.error('알고리즘 서버 에러 응답:', response.data);
+      throw new HttpException(
+        '알고리즘 서버에서 오류가 발생했습니다.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return response.data as AlgorithmResponse;
+  }
 
   async executeRecommend(
     executeRecommendDto: ExecuteRecommendRequestDto,
@@ -113,198 +278,62 @@ export class RecommendSoundService {
       console.log('조회된 추천 결과:', existingRecommendation);
       console.log('추천 결과 존재 여부:', !!existingRecommendation);
 
-      let algorithmRequestData;
-      let response;
+      let recommendationResult: AlgorithmResponse;
 
       if (currentAvgSleepData) {
         // 생체 데이터가 있는 경우
         if (existingRecommendation) {
           // 생체 데이터 + 기존 추천 결과가 있는 경우
-          // 전날 생체 데이터 조회
-          const previousDate = new Date(targetDate);
-          previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+          const previousAvgSleepData = await this.getPreviousSleepData(
+            userID,
+            targetDate,
+          );
+          const previousRecommendation = await this.getPreviousRecommendation(
+            userID,
+            targetDate,
+          );
+          const soundData = this.prepareSoundData(user, previousRecommendation);
+          const surveyData = this.prepareSurveyData(user);
 
-          const previousStartOfDay = new Date(previousDate);
-          previousStartOfDay.setUTCHours(0, 0, 0, 0);
-          const previousEndOfDay = new Date(previousDate);
-          previousEndOfDay.setUTCHours(23, 59, 59, 999);
-
-          const previousAvgSleepData = await this.connection
-            .collection('avgSleepData')
-            .findOne({
-              userID,
-              date: {
-                $gte: new Date(
-                  Date.UTC(
-                    previousDate.getUTCFullYear(),
-                    previousDate.getUTCMonth(),
-                    previousDate.getUTCDate(),
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                ),
-                $lt: new Date(
-                  Date.UTC(
-                    previousDate.getUTCFullYear(),
-                    previousDate.getUTCMonth(),
-                    previousDate.getUTCDate() + 1,
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                ),
-              },
-            });
-
-          // 전날 추천 결과 조회 (한국 시간대 기준)
-          const previousRecommendation = await this.recommendSoundModel
-            .findOne({
-              userId: userID,
-              date: {
-                $gte: previousStartOfDay,
-                $lt: previousEndOfDay,
-              },
-            })
-            .exec();
-
-          // 사용자의 preferredSounds 조회 (rank 1,2,3위)
-          const userPreferredSounds = user.preferredSounds || [];
-          const top3PreferredSounds = userPreferredSounds
-            .filter((sound) => sound.rank <= 3)
-            .sort((a, b) => a.rank - b.rank)
-            .map((sound) => sound.filename);
-
-          // 전날 추천 결과 조회 (rank 1,2,3위)
-          const top3PreviousRecommendations = previousRecommendation
-            ? previousRecommendation.recommended_sounds
-                .filter((sound) => sound.rank <= 3)
-                .sort((a, b) => a.rank - b.rank)
-                .map((sound) => sound.filename)
-            : [];
-
-          const surveyData = {
-            ...user.survey,
-            preferenceBalance: user.survey.preferenceBalance || 0.5,
-            youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
-            noisePreferenceOther: user.survey.noisePreferenceOther || '',
-            emotionalSleepInterferenceOther:
-              user.survey.emotionalSleepInterferenceOther || '',
-            calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
-          };
-
-          algorithmRequestData = {
+          const algorithmRequestData: AlgorithmRequestData = {
             userID: userID,
             date: date,
             sleepData: {
-              current: {
-                awakeRatio: currentAvgSleepData.ratio.awakeRatio,
-                deepSleepRatio: currentAvgSleepData.ratio.deepSleepRatio,
-                lightSleepRatio: currentAvgSleepData.ratio.lightSleepRatio,
-                remSleepRatio: currentAvgSleepData.ratio.remSleepRatio,
-                sleepScore: currentAvgSleepData.sleepScore,
-              },
+              current: this.convertToSleepDataRatio(
+                currentAvgSleepData as unknown as AvgSleepData,
+              ),
               previous: previousAvgSleepData
-                ? {
-                    awakeRatio: previousAvgSleepData.ratio.awakeRatio,
-                    deepSleepRatio: previousAvgSleepData.ratio.deepSleepRatio,
-                    lightSleepRatio: previousAvgSleepData.ratio.lightSleepRatio,
-                    remSleepRatio: previousAvgSleepData.ratio.remSleepRatio,
-                    sleepScore: previousAvgSleepData.sleepScore,
-                  }
+                ? this.convertToSleepDataRatio(previousAvgSleepData)
                 : undefined,
             },
-            sounds: {
-              preferredSounds: top3PreferredSounds,
-              previousRecommendations: top3PreviousRecommendations,
-            },
+            sounds: soundData,
             survey: surveyData,
           };
 
           console.log(
             'API 호출: /recommend/combined (생체데이터 + 기존추천결과 있음)',
           );
-          response = await firstValueFrom(
-            this.httpService.post(
-              `${process.env.RECOMMEND_ALGORITHM_URL}/recommend/combined`,
-              algorithmRequestData,
-              {
-                validateStatus: (status) => status < 500,
-              },
-            ),
+          recommendationResult = await this.callAlgorithmAPI(
+            '/recommend/combined',
+            algorithmRequestData,
           );
         } else {
           // 생체 데이터만 있는 경우 (기존 추천 결과 없음)
-          // 전날 생체 데이터 조회 (optional)
-          const previousDate = new Date(targetDate);
-          previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+          const previousAvgSleepData = await this.getPreviousSleepData(
+            userID,
+            targetDate,
+          );
+          const surveyData = this.prepareSurveyData(user);
 
-          const previousStartOfDay = new Date(previousDate);
-          previousStartOfDay.setUTCHours(0, 0, 0, 0);
-          const previousEndOfDay = new Date(previousDate);
-          previousEndOfDay.setUTCHours(23, 59, 59, 999);
-
-          const previousAvgSleepData = await this.connection
-            .collection('avgSleepData')
-            .findOne({
-              userID,
-              date: {
-                $gte: new Date(
-                  Date.UTC(
-                    previousDate.getUTCFullYear(),
-                    previousDate.getUTCMonth(),
-                    previousDate.getUTCDate(),
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                ),
-                $lt: new Date(
-                  Date.UTC(
-                    previousDate.getUTCFullYear(),
-                    previousDate.getUTCMonth(),
-                    previousDate.getUTCDate() + 1,
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                ),
-              },
-            });
-
-          const surveyData = {
-            ...user.survey,
-            preferenceBalance: user.survey.preferenceBalance || 0.5,
-            youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
-            noisePreferenceOther: user.survey.noisePreferenceOther || '',
-            emotionalSleepInterferenceOther:
-              user.survey.emotionalSleepInterferenceOther || '',
-            calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
-          };
-
-          algorithmRequestData = {
+          const algorithmRequestData: AlgorithmRequestData = {
             userID: userID,
             date: date,
             sleepData: {
-              current: {
-                awakeRatio: currentAvgSleepData.ratio.awakeRatio,
-                deepSleepRatio: currentAvgSleepData.ratio.deepSleepRatio,
-                lightSleepRatio: currentAvgSleepData.ratio.lightSleepRatio,
-                remSleepRatio: currentAvgSleepData.ratio.remSleepRatio,
-                sleepScore: currentAvgSleepData.sleepScore,
-              },
+              current: this.convertToSleepDataRatio(
+                currentAvgSleepData as unknown as AvgSleepData,
+              ),
               previous: previousAvgSleepData
-                ? {
-                    awakeRatio: previousAvgSleepData.ratio.awakeRatio,
-                    deepSleepRatio: previousAvgSleepData.ratio.deepSleepRatio,
-                    lightSleepRatio: previousAvgSleepData.ratio.lightSleepRatio,
-                    remSleepRatio: previousAvgSleepData.ratio.remSleepRatio,
-                    sleepScore: previousAvgSleepData.sleepScore,
-                  }
+                ? this.convertToSleepDataRatio(previousAvgSleepData)
                 : undefined,
             },
             survey: surveyData,
@@ -313,110 +342,35 @@ export class RecommendSoundService {
           console.log(
             'API 호출: /recommend/combined/new (생체데이터만 있음, 기존추천결과 없음)',
           );
-          response = await firstValueFrom(
-            this.httpService.post(
-              `${process.env.RECOMMEND_ALGORITHM_URL}/recommend/combined/new`,
-              algorithmRequestData,
-              {
-                validateStatus: (status) => status < 500,
-              },
-            ),
+          recommendationResult = await this.callAlgorithmAPI(
+            '/recommend/combined/new',
+            algorithmRequestData,
           );
         }
       } else {
         // 생체 데이터가 없는 경우
-        // 전날 추천 결과 조회 (preferredSounds와 previousRecommendations 포함 가능)
-        const previousDate = new Date(targetDate);
-        previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+        const previousRecommendation = await this.getPreviousRecommendation(
+          userID,
+          targetDate,
+        );
+        const soundData = this.prepareSoundData(user, previousRecommendation);
+        const surveyData = this.prepareSurveyData(user);
 
-        const previousStartOfDay = new Date(previousDate);
-        previousStartOfDay.setUTCHours(0, 0, 0, 0);
-        const previousEndOfDay = new Date(previousDate);
-        previousEndOfDay.setUTCHours(23, 59, 59, 999);
-
-        // 전날 추천 결과 조회 (한국 시간대 기준)
-        const previousRecommendation = await this.recommendSoundModel
-          .findOne({
-            userId: userID,
-            date: {
-              $gte: previousStartOfDay,
-              $lt: previousEndOfDay,
-            },
-          })
-          .exec();
-
-        // 사용자의 preferredSounds 조회 (rank 1,2,3위만)
-        const userPreferredSounds = user.preferredSounds || [];
-        const top3PreferredSounds = userPreferredSounds
-          .filter((sound) => sound.rank <= 3)
-          .sort((a, b) => a.rank - b.rank)
-          .map((sound) => sound.filename);
-
-        // 전날 추천 결과에서 rank 1,2,3위만 추출
-        const top3PreviousRecommendations = previousRecommendation
-          ? previousRecommendation.recommended_sounds
-              .filter((sound) => sound.rank <= 3)
-              .sort((a, b) => a.rank - b.rank)
-              .map((sound) => sound.filename)
-          : [];
-
-        const surveyData = {
-          ...user.survey,
-          preferenceBalance: user.survey.preferenceBalance || 0.5,
-          youtubeContentTypeOther: user.survey.youtubeContentTypeOther || '',
-          noisePreferenceOther: user.survey.noisePreferenceOther || '',
-          emotionalSleepInterferenceOther:
-            user.survey.emotionalSleepInterferenceOther || '',
-          calmingSoundTypeOther: user.survey.calmingSoundTypeOther || '',
-        };
-
-        algorithmRequestData = {
+        const algorithmRequestData: AlgorithmRequestData = {
           userID: userID,
           date: date,
           survey: surveyData,
-          sounds: {
-            preferredSounds: top3PreferredSounds,
-            previousRecommendations: top3PreviousRecommendations,
-          },
+          sounds: soundData,
         };
 
         console.log(
           'API 호출: /recommend (생체데이터 없음, 설문조사 + 사운드 데이터)',
         );
-        response = await firstValueFrom(
-          this.httpService.post(
-            `${process.env.RECOMMEND_ALGORITHM_URL}/recommend`,
-            algorithmRequestData,
-            {
-              validateStatus: (status) => status < 500,
-            },
-          ),
+        recommendationResult = await this.callAlgorithmAPI(
+          '/recommend',
+          algorithmRequestData,
         );
       }
-
-      console.log('=== 알고리즘 서버 통신 로그 ===');
-      console.log('전송된 요청 데이터:');
-      console.log(JSON.stringify(algorithmRequestData, null, 2));
-      console.log('받은 응답 상태:', response.status);
-      console.log('받은 응답 데이터:');
-      console.log(JSON.stringify(response.data, null, 2));
-      console.log('================================');
-
-      if (response.status !== 200) {
-        console.error('알고리즘 서버 에러 응답:', response.data);
-        throw new HttpException(
-          '알고리즘 서버에서 오류가 발생했습니다.',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      const recommendationResult: {
-        recommendation_text: string;
-        recommended_sounds: Array<{
-          filename: string;
-          rank: number;
-        }>;
-      } = response.data;
 
       // Mongoose 모델을 사용하여 저장 (timestamps 자동 생성)
       const newRecommendSound = new this.recommendSoundModel({

@@ -19,12 +19,22 @@ export class UserSurveyDto {
   @IsIn(['coolWhite', 'neutral', 'warmYellow', 'unknown'])
   lightColorTemperature: string;
 
-  // Q3youtubeContentTypeOther
+  // Q3
   @ApiProperty({
     example: 'other',
     description: 'noisePreference',
   })
-  @IsIn(['silence', 'whiteNoise', 'youtube', 'other'])
+  @IsIn([
+    'silence',
+    'whiteNoise',
+    'rainsound',
+    'firesound',
+    'nolyricssound',
+    'yeslyricssound',
+    'drama',
+    'radio',
+    'other',
+  ])
   noisePreference: string;
 
   @ApiProperty({
@@ -37,26 +47,6 @@ export class UserSurveyDto {
     message: 'noisePreference "other"일 경우 noisePreferenceOther 필수입니다.',
   })
   noisePreferenceOther: string;
-
-  // Q4
-  @ApiProperty({
-    example: 'other',
-    description: 'youtubeContentType',
-  })
-  @IsIn(['asmr', 'music', 'radio', 'drama', 'other'])
-  youtubeContentType: string;
-
-  @ApiProperty({
-    example: '아이돌 영상',
-    description: 'youtubeContentTypeOther',
-  })
-  @IsOptional()
-  @IsString()
-  @RequiredIfOther('youtubeContentType', {
-    message:
-      'youtubeContentType이 "other"일 경우 youtubeContentTypeOther는 필수입니다.',
-  })
-  youtubeContentTypeOther: string;
 
   // Q5
   @ApiProperty({
@@ -87,7 +77,7 @@ export class UserSurveyDto {
     example: 'sometimes',
     description: 'morningSunlightExposure',
   })
-  @IsIn(['daily', 'sometimes', 'rarely'])
+  @IsIn(['under1h', 'between1to3', 'between3to5', 'between5to7', 'over7'])
   morningSunlightExposure: string;
 
   // Q9
@@ -103,7 +93,7 @@ export class UserSurveyDto {
     example: '15to30',
     description: 'napDuration',
   })
-  @IsIn(['under15', '15to30', '30to60', 'over60'])
+  @IsIn(['none', 'under15', '15to30', '30to60', 'over60'])
   napDuration: string;
 
   // Q11
@@ -111,7 +101,14 @@ export class UserSurveyDto {
     example: 'afternoon',
     description: 'mostDrowsyTime',
   })
-  @IsIn(['morning', 'afternoon', 'evening', 'night', 'random'])
+  @IsIn([
+    'morningWakeup',
+    'afterLunch',
+    'afternoon',
+    'afterDinner',
+    'night',
+    'random',
+  ])
   mostDrowsyTime: string;
 
   // Q12
@@ -136,6 +133,8 @@ export class UserSurveyDto {
       'daySleepy',
       'nightmares',
       'movesALot',
+      'notRested',
+      'useSleepingPills',
       'none',
     ],
     { each: true },
@@ -193,6 +192,14 @@ export class UserSurveyDto {
 
   // Q17
   @ApiProperty({
+    example: '0.6',
+    description: 'preferenceBalance',
+  })
+  @IsNumber()
+  preferenceBalance: number;
+
+  // Q18
+  @ApiProperty({
     example: ['watch', 'app'],
     description: 'sleepDevicesUsed',
   })
@@ -200,47 +207,47 @@ export class UserSurveyDto {
   @IsIn(['watch', 'app', 'light', 'speaker', 'none'], { each: true })
   sleepDevicesUsed: string[];
 
-  // Q18
+  // Q19
   @ApiProperty({
     example: 'over30min',
     description: 'timeToFallAsleep',
   })
-  @IsIn(['under5min', '5to15min', '15to30min', 'over30min'])
+  @IsIn(['under5min', '5to15min', '15to30min', 'over30min', 'over1h'])
   timeToFallAsleep: string;
 
-  // Q19
+  // Q20
   @ApiProperty({
     example: '1to2cups',
     description: 'caffeineIntakeLevel',
   })
-  @IsIn(['none', '1to2cups', 'over3cups'])
+  @IsIn(['none', '1to2cups', 'over3cups', 'over5cups'])
   caffeineIntakeLevel: string;
-
-  // Q20
-  @ApiProperty({
-    example: 'daily',
-    description: 'exerciseFrequency',
-  })
-  @IsIn(['none', '2to3week', 'daily'])
-  exerciseFrequency: string;
 
   // Q21
   @ApiProperty({
-    example: 'morning',
-    description: 'exerciseWhen',
+    example: 'dailyMorning',
+    description: 'exerciseFrequency',
   })
-  @IsIn(['night', 'day', 'morning', 'none'])
-  exerciseWhen: string;
+  @IsIn(['none', '2to3week', 'dailyMorning'])
+  exerciseFrequency: string;
 
   // Q22
   @ApiProperty({
-    example: 'over1hour',
-    description: 'screenTimeBeforeSleep',
+    example: '8to12',
+    description: 'exerciseWhen',
   })
-  @IsIn(['none', 'under30min', 'over1hour'])
-  screenTimeBeforeSleep: string;
+  @IsIn(['before8', '8to12', '12to16', '16to20', '20to24', 'night'])
+  exerciseWhen: string;
 
   // Q23
+  @ApiProperty({
+    example: 'under30min',
+    description: 'screenTimeBeforeSleep',
+  })
+  @IsIn(['none', 'under30min', '30to1h', '1hto2h', '2hto3h', 'over3h'])
+  screenTimeBeforeSleep: string;
+
+  // Q24
   @ApiProperty({
     example: 'medium',
     description: 'stressLevel',
@@ -248,20 +255,19 @@ export class UserSurveyDto {
   @IsIn(['high', 'medium', 'low'])
   stressLevel: string;
 
-  // Q24
+  // Q25
   @ApiProperty({
-    example: ['fallAsleepFast', 'stayAsleep'],
+    example: 'fallAsleepFast',
     description: 'sleepGoal',
   })
-  @IsArray()
-  @IsIn(['deepSleep', 'fallAsleepFast', 'stayAsleep'], { each: true })
-  sleepGoal: string[];
-
-  // 선호도 vs 효과성 밸런스 (0.0~1.0)
-  @ApiProperty({
-    example: '0.6',
-    description: 'preferenceBalance',
-  })
-  @IsNumber()
-  preferenceBalance: number;
+  @IsIn([
+    'deepSleep',
+    'fallAsleepFast',
+    'stayAsleep',
+    'wakeUpRefreshed',
+    'comfortableSleep',
+    'optimalEnvironment',
+    'consistentSchedule',
+  ])
+  sleepGoal: string;
 }
