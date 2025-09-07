@@ -62,7 +62,14 @@ export type Survey = {
     | 'over1h';
   caffeineIntakeLevel: 'none' | '1to2cups' | 'over3cups' | 'over5cups';
   exerciseFrequency: 'none' | '2to3week' | 'dailyMorning';
-  exerciseWhen: 'before8' | '8to12' | '12to16' | '16to20' | '20to24' | 'night';
+  exerciseWhen:
+    | 'before8'
+    | '8to12'
+    | '12to16'
+    | '16to20'
+    | '20to24'
+    | 'night'
+    | 'none';
   screenTimeBeforeSleep:
     | 'none'
     | 'under30min'

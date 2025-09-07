@@ -236,7 +236,7 @@ export class UserSurveyDto {
     example: '8to12',
     description: 'exerciseWhen',
   })
-  @IsIn(['before8', '8to12', '12to16', '16to20', '20to24', 'night'])
+  @IsIn(['before8', '8to12', '12to16', '16to20', '20to24', 'night', 'none'])
   exerciseWhen: string;
 
   // Q23
