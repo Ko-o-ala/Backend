@@ -123,7 +123,6 @@ export class LlmController {
     // 사용자의 통합 데이터 가져오기 (생체 데이터 + 설문조사 + 사운드 추천)
     let integratedData;
     try {
-      // eslint-disable-next-line
       integratedData = await this.llmService.getUserAllData(user.userID);
     } catch {
       throw new Error('사용자 데이터를 가져오는 중 오류가 발생했습니다.');

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString, Matches } from 'class-validator';
 import { Document, SchemaOptions } from 'mongoose';
 import { Survey } from './types/survey.type';
 import { getMongoDBKSTTime } from '../common/utils/date.util';
@@ -11,12 +11,15 @@ const options: SchemaOptions = {};
 export class User extends Document {
   @ApiProperty({
     example: 'seoin2744',
-    description: 'userID',
+    description: 'userID (영어와 숫자만 허용)',
     required: true,
   })
   @Prop({ required: true, unique: true })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^[a-zA-Z0-9]+$/, {
+    message: 'userID는 영어와 숫자만 사용할 수 있습니다.',
+  })
   userID: string;
 
   @ApiProperty({

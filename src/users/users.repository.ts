@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { User } from './users.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserRequestDto } from './dto/users.request.dto';
 import { UserCurrentDto } from './dto/users.cuurent.dto';
 import { Survey } from './types/survey.type';
 
@@ -38,7 +37,7 @@ export class UsersRepository {
     return result ? true : false;
   }
 
-  async create(user: UserRequestDto): Promise<User> {
+  async create(user: Partial<User>): Promise<User> {
     return await this.userModel.create(user);
   }
 

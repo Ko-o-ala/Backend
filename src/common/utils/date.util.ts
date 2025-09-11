@@ -91,3 +91,26 @@ export function getKSTPreviousDayBoundaries(date: Date): {
 export function getMongoDBKSTTime(): Date {
   return getCurrentKST();
 }
+
+/**
+ * 생년월일 문자열을 표준 형식(YYYY-MM-DD)으로 변환합니다.
+ * @param birthdateString 생년월일 문자열 (YYYYMMDD 또는 YYYY-MM-DD 형식)
+ * @returns 표준 형식의 생년월일 문자열 (YYYY-MM-DD)
+ */
+export function formatBirthdate(birthdateString: string): string {
+  // 이미 YYYY-MM-DD 형식인 경우 그대로 반환
+  if (/^\d{4}-\d{2}-\d{2}$/.test(birthdateString)) {
+    return birthdateString;
+  }
+
+  // YYYYMMDD 형식인 경우 YYYY-MM-DD로 변환
+  if (/^\d{8}$/.test(birthdateString)) {
+    const year = birthdateString.substring(0, 4);
+    const month = birthdateString.substring(4, 6);
+    const day = birthdateString.substring(6, 8);
+    return `${year}-${month}-${day}`;
+  }
+
+  // 지원하지 않는 형식인 경우 원본 반환
+  return birthdateString;
+}

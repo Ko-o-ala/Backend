@@ -10,6 +10,7 @@ import { AuthService } from '../../auth/auth.service';
 import { User } from '../users.schema';
 import { CreateHardwareDto } from '../dto/hardware.dto';
 import { Survey } from '../types/survey.type';
+import { formatBirthdate } from '../../common/utils/date.util';
 
 @Injectable()
 export class UsersService {
@@ -69,12 +70,15 @@ export class UsersService {
       throw new HttpException('해당하는 유저는 이미 존재합니다.', 403);
     }
 
+    // 생년월일을 표준 형식으로 변환 (birthdate는 string 타입)
+    const formattedBirthdate = formatBirthdate(birthdate as unknown as string);
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await this.userRepository.create({
       userID,
       name,
       password: hashedPassword,
-      birthdate: new Date(birthdate),
+      birthdate: new Date(formattedBirthdate),
       gender,
     });
 
@@ -106,7 +110,9 @@ export class UsersService {
     }
 
     if (updateDto.birthdate) {
-      updateData.birthdate = new Date(updateDto.birthdate);
+      // 생년월일을 표준 형식으로 변환
+      const formattedBirthdate = formatBirthdate(updateDto.birthdate);
+      updateData.birthdate = new Date(formattedBirthdate);
     }
 
     if (updateDto.gender !== undefined) {
